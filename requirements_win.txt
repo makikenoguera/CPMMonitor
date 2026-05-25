@@ -1,0 +1,7 @@
+# CPM Monitor - Dependencias Windows
+# pip install -r requirements_win.txt
+
+PyQt5>=5.15.0
+pyinstaller>=6.0.0
+requests>=2.28.0
+certifi>=2023.0.0

@@ -1,0 +1,61 @@
+name: Build Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*'        # Se activa con: git tag v4.3 && git push --tags
+  workflow_dispatch: # También se puede lanzar manualmente desde GitHub
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install -r requirements_win.txt
+
+      - name: Compilar con PyInstaller
+        run: pyinstaller CPMMonitor_win.spec --clean --noconfirm
+
+      - name: Crear ZIP
+        run: |
+          cd dist
+          Compress-Archive -Path CPMMonitor\* -DestinationPath CPMMonitor_v4.3_win.zip
+        shell: powershell
+
+      - name: Subir EXE como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: CPMMonitor-Windows
+          path: |
+            dist\CPMMonitor\CPMMonitor.exe
+            dist\CPMMonitor_v4.3_win.zip
+          retention-days: 30
+
+      - name: Crear Release (solo cuando hay tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist\CPMMonitor\CPMMonitor.exe
+            dist\CPMMonitor_v4.3_win.zip
+          name: CPM Monitor ${{ github.ref_name }}
+          body: |
+            ## CPM Monitor ${{ github.ref_name }} — Windows
+
+            ### Instalación
+            1. Descarga `CPMMonitor.exe`
+            2. Ejecuta como administrador
+            3. Ingresa con las credenciales que recibiste por correo
+
+            ### Archivos
+            - `CPMMonitor.exe` — instalador completo
+            - `CPMMonitor_v4.3_win.zip` — versión portable (sin instalador)

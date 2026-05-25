@@ -1,0 +1,51 @@
+# Build outputs
+dist/
+build/
+*.spec.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.eggs/
+
+# Virtual envs
+venv/
+env/
+.venv/
+
+# macOS
+.DS_Store
+*.dmg
+*.pkg
+
+# Local data / logs
+*.db
+*.sqlite
+*.log
+Logs/
+
+# Config local (nunca subir tokens ni credenciales)
+config.json
+*.json.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Binarios y zips locales
+files.zip
+*.zip
+
+# Versiones archivadas (mantener solo en local)
+versions/
+
+# Dashboard (se despliega en el VPS, no va en este repo)
+dashboard/
+
+# Documentos
+documentos/

@@ -1,0 +1,11 @@
+# CPM Tracks - Dependencias macOS
+# pip install -r requirements.txt
+
+# Interfaz gráfica
+PyQt6>=6.5.0
+
+# Ícono en barra de menú macOS
+rumps>=0.4.0
+
+# Empaquetado (solo para compilar, no en runtime)
+pyinstaller>=6.0.0
