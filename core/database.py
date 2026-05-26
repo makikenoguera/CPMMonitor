@@ -6,9 +6,14 @@ import sqlite3
 import os
 import time
 import hashlib
+import platform
 
-DATA_DIR = os.path.join(os.path.expanduser("~"), "Library", "Application Support", "CPMTracks")
-DB_PATH  = os.path.join(DATA_DIR, "cpm_tracks.db")
+if platform.system() == "Windows":
+    DATA_DIR = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "CPMTracks")
+else:
+    DATA_DIR = os.path.join(os.path.expanduser("~"), "Library", "Application Support", "CPMTracks")
+
+DB_PATH = os.path.join(DATA_DIR, "cpm_tracks.db")
 
 
 def init_db():
