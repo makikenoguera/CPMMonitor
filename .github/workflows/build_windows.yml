@@ -28,28 +28,18 @@ jobs:
       - name: Compilar con PyInstaller
         run: pyinstaller CPMMonitor_win.spec --clean --noconfirm
 
-      - name: Crear ZIP
-        run: |
-          cd dist
-          Compress-Archive -Path CPMMonitor\* -DestinationPath CPMMonitor_v4.3_win.zip
-        shell: powershell
-
       - name: Subir EXE como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: CPMMonitor-Windows
-          path: |
-            dist\CPMMonitor\CPMMonitor.exe
-            dist\CPMMonitor_v4.3_win.zip
+          path: dist\CPMMonitor.exe
           retention-days: 30
 
       - name: Crear Release (solo cuando hay tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist\CPMMonitor\CPMMonitor.exe
-            dist\CPMMonitor_v4.3_win.zip
+          files: dist\CPMMonitor.exe
           name: CPM Monitor ${{ github.ref_name }}
           body: |
             ## CPM Monitor ${{ github.ref_name }} — Windows

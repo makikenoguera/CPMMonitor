@@ -1,10 +1,11 @@
 @echo off
 REM ============================================================
 REM  CPM Monitor - Script de compilacion para Windows
-REM  Requiere: Python 3.10+, pip install -r requirements_win.txt
+REM  Requiere: Python 3.11+, pip install -r requirements_win.txt
+REM  Genera: dist\CPMMonitor.exe (onefile, todo incluido)
 REM ============================================================
 
-echo [1/3] Instalando dependencias...
+echo [1/2] Instalando dependencias...
 pip install -r requirements_win.txt
 if %errorlevel% neq 0 (
     echo ERROR: pip install fallo
@@ -12,7 +13,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [2/3] Compilando con PyInstaller...
+echo [2/2] Compilando con PyInstaller (onefile)...
 pyinstaller CPMMonitor_win.spec --clean --noconfirm
 if %errorlevel% neq 0 (
     echo ERROR: PyInstaller fallo
@@ -20,17 +21,13 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [3/3] Empaquetando en ZIP...
-if exist "dist\CPMMonitor_v4.3_win.zip" del /f "dist\CPMMonitor_v4.3_win.zip"
-powershell -Command "Compress-Archive -Path 'dist\CPMMonitor\*' -DestinationPath 'dist\CPMMonitor_v4.3_win.zip'"
-
 echo.
 echo ============================================================
 echo  Listo!
-echo  Ejecutable:  dist\CPMMonitor\CPMMonitor.exe
-echo  ZIP:         dist\CPMMonitor_v4.3_win.zip
+echo  Ejecutable: dist\CPMMonitor.exe
+echo  (Un solo archivo, no necesita instalacion adicional)
 echo ============================================================
-echo  Sube ambos archivos al servidor:
-echo  monitor.cpmtracks.com/monitor-install/
+echo  Sube el archivo al servidor:
+echo  monitor.cpmtracks.com/monitor-install/CPMMonitor.exe
 echo ============================================================
 pause

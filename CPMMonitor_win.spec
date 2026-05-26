@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec para Windows — genera CPMMonitor.exe (onedir, sin consola)
+# PyInstaller spec para Windows — genera CPMMonitor.exe (onefile, sin consola)
 
 a = Analysis(
     ['main.py'],
@@ -37,8 +37,10 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.datas,
     [],
-    exclude_binaries=True,
+    exclude_binaries=False,
     name='CPMMonitor',
     debug=False,
     bootloader_ignore_signals=False,
@@ -51,13 +53,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon='icon_tray.ico',
-)
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='CPMMonitor',
+    runtime_tmpdir=None,
 )
