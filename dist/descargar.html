@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPM Monitor — Descarga</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080B0F;color:#E8EAF0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden}
+body::before{content:'';position:fixed;inset:0;background:url('bg.jpg') center/cover no-repeat;filter:blur(2px) saturate(1.4);transform:scale(1.05);z-index:0}
+body::after{content:'';position:fixed;inset:0;background:rgba(6,9,14,.82);z-index:1}
+
+.screen{width:100%;max-width:500px;animation:fadeIn .35s ease;position:relative;z-index:2}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.card{background:rgba(15,19,24,.85);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:44px 40px;text-align:center;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 24px 64px rgba(0,0,0,.6)}
+
+/* LOGO */
+.logo{display:inline-flex;align-items:center;gap:12px;margin:0 auto 24px}
+.logo-icon{width:68px;height:68px;background:linear-gradient(135deg,#1A7FD4 0%,#0E5FA8 100%);border-radius:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(26,127,212,.45);flex-shrink:0}
+.logo-text{display:flex;flex-direction:column;line-height:1;gap:5px;text-align:left}
+.logo-cpm{color:#E8EAF0;font-family:'Syne',sans-serif;font-size:28px;font-weight:800;letter-spacing:.04em}
+.logo-monitor{color:#1A7FD4;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.28em;text-transform:uppercase}
+
+/* DOWNLOAD SCREEN */
+h1{font-size:22px;font-weight:700;margin-bottom:6px}
+.version{display:inline-block;background:#1A7FD422;color:#1A7FD4;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;margin-bottom:14px}
+.desc{color:#7A8499;font-size:13px;line-height:1.65;margin-bottom:24px}
+
+/* OS tabs */
+.os-tabs{display:flex;gap:8px;margin-bottom:24px;background:#080B0F;border-radius:12px;padding:4px}
+.os-tab{flex:1;padding:9px 12px;border:none;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;color:#525762;background:transparent;font-family:inherit}
+.os-tab.active{background:#1A7FD4;color:#fff}
+.os-tab:hover:not(.active){color:#E8EAF0}
+
+/* OS badge */
+.os-detected{font-size:11px;color:#3A4255;margin-bottom:16px}
+.os-detected b{color:#525762}
+
+.btn-dl{display:flex;align-items:center;justify-content:center;gap:10px;background:#1A7FD4;color:#fff;border-radius:12px;padding:15px 24px;font-size:15px;font-weight:700;text-decoration:none;cursor:pointer;border:none;width:100%;transition:background .15s;margin-bottom:10px;font-family:inherit}
+.btn-dl:hover{background:#0A5A9C}
+.btn-dl svg{flex-shrink:0}
+
+.btn-zip{display:flex;align-items:center;justify-content:center;gap:8px;background:transparent;color:#525762;border:1px solid #1C2230;border-radius:12px;padding:12px 24px;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;width:100%;transition:all .15s;margin-bottom:26px;font-family:inherit}
+.btn-zip:hover{color:#E8EAF0;border-color:#253040}
+
+.req{color:#3A4255;font-size:11px;line-height:1.8}
+.req b{color:#525762}
+
+/* THANKS SCREEN */
+.thanks-icon{width:60px;height:60px;background:#1A7FD422;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.thanks-icon svg{color:#1A7FD4}
+.thanks-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.thanks-sub{color:#7A8499;font-size:13px;margin-bottom:32px}
+
+.steps{text-align:left;display:flex;flex-direction:column;gap:0}
+.step{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid #0F1318}
+.step:last-child{border-bottom:none}
+.step-num{width:28px;height:28px;background:#1A7FD4;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px}
+.step-body{}
+.step-title{font-size:13px;font-weight:600;color:#E8EAF0;margin-bottom:3px}
+.step-desc{font-size:12px;color:#7A8499;line-height:1.55}
+
+.btn-back{display:inline-flex;align-items:center;gap:6px;background:transparent;color:#525762;border:none;font-size:12px;cursor:pointer;margin-top:24px;font-family:inherit;padding:0}
+.btn-back:hover{color:#E8EAF0}
+</style>
+</head>
+<body>
+
+<!-- PANTALLA DESCARGA -->
+<div class="screen" id="screen-dl">
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon"><svg width="32" height="28" viewBox="0 0 18 16" fill="none"><rect x="0" y="5" width="3" height="9" rx="1.5" fill="white"/><rect x="5" y="1" width="3" height="14" rx="1.5" fill="white"/><rect x="10" y="3" width="3" height="11" rx="1.5" fill="white" opacity=".85"/><rect x="15" y="6" width="3" height="7" rx="1.5" fill="white" opacity=".6"/></svg></div>
+      <div class="logo-text"><span class="logo-cpm">CPM</span><span class="logo-monitor">MONITOR</span></div>
+    </div>
+    <span class="version" id="ver-badge">v4.3</span>
+    <p class="desc">Agente de monitoreo de reproducciones de audio y video para establecimientos.<br>Se instala en la barra de tareas y registra automáticamente las canciones reproducidas.</p>
+
+    <!-- OS TABS -->
+    <div class="os-tabs">
+      <button class="os-tab" id="tab-mac" onclick="setOS('mac')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="margin-right:5px;vertical-align:-2px"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        macOS
+      </button>
+      <button class="os-tab" id="tab-win" onclick="setOS('win')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="margin-right:5px;vertical-align:-2px"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+        Windows
+      </button>
+    </div>
+
+    <p class="os-detected" id="os-detected-msg"></p>
+
+    <!-- BOTONES macOS -->
+    <div id="dl-mac">
+      <button class="btn-dl" onclick="startDownload('pkg')">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/></svg>
+        Descargar instalador (.pkg)
+      </button>
+      <button class="btn-zip" onclick="startDownload('zip')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Descargar .zip (instalación manual)
+      </button>
+      <div class="req"><b>Requisitos:</b> macOS 12 Monterey o superior &nbsp;·&nbsp; Apple Silicon &amp; Intel</div>
+    </div>
+
+    <!-- BOTONES Windows -->
+    <div id="dl-win" style="display:none">
+      <button class="btn-dl" onclick="startDownload('exe')">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/></svg>
+        Descargar instalador (.exe)
+      </button>
+      <button class="btn-zip" onclick="startDownload('win-zip')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Descargar .zip (instalación manual)
+      </button>
+      <div class="req"><b>Requisitos:</b> Windows 10 / 11 (64-bit)</div>
+    </div>
+  </div>
+</div>
+
+<!-- PANTALLA GRACIAS + INSTRUCCIONES -->
+<div class="screen" id="screen-thanks" style="display:none">
+  <div class="card">
+    <div class="thanks-icon">
+      <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    </div>
+    <div class="thanks-title">¡Descarga iniciada!</div>
+    <p class="thanks-sub">Sigue estos pasos para completar la instalación</p>
+
+    <!-- PASOS macOS -->
+    <div id="steps-mac" class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Abre el instalador</div>
+          <div class="step-desc">Haz doble clic en el archivo <b>.pkg</b> descargado y sigue los pasos del asistente hasta completar.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Pantalla de activación</div>
+          <div class="step-desc">Al terminar la instalación aparece automáticamente la pantalla de activación. Ingresa el <b>email y contraseña</b> que te enviamos.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Cambia tu contraseña</div>
+          <div class="step-desc">En el primer acceso el sistema te pedirá elegir una contraseña segura. Escoge una que recuerdes fácilmente.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Acepta los permisos de macOS</div>
+          <div class="step-desc">macOS solicitará acceso a <b>Accesibilidad</b> y <b>Automatización</b>. Son necesarios para detectar reproducciones en Spotify, YouTube y otros reproductores.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">Busca el ícono en la barra superior</div>
+          <div class="step-desc">El monitor aparece como un pequeño ícono <b>CPM</b> en la barra de menú. Desde ahí puedes abrir el panel y ver las reproducciones en tiempo real.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASOS Windows -->
+    <div id="steps-win" class="steps" style="display:none">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Ejecuta el instalador</div>
+          <div class="step-desc">Haz doble clic en el archivo <b>.exe</b> descargado. Si Windows SmartScreen lo bloquea, haz clic en <b>"Más información" → "Ejecutar de todas formas"</b>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Pantalla de activación</div>
+          <div class="step-desc">Al terminar la instalación aparece automáticamente la pantalla de activación. Ingresa el <b>email y contraseña</b> que te enviamos.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Cambia tu contraseña</div>
+          <div class="step-desc">En el primer acceso el sistema te pedirá elegir una contraseña segura. Escoge una que recuerdes fácilmente.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Busca el ícono en la bandeja</div>
+          <div class="step-desc">El monitor aparece como un pequeño ícono <b>CPM</b> en la bandeja del sistema (esquina inferior derecha). Desde ahí puedes abrir el panel y ver las reproducciones en tiempo real.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">Inicio automático</div>
+          <div class="step-desc">El monitor se registra para <b>iniciar automáticamente</b> con Windows. Puedes activar o desactivar esto desde el menú del ícono en la bandeja.</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-back" onclick="showDownload()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+      Volver a la descarga
+    </button>
+  </div>
+</div>
+
+<script>
+let currentOS = 'mac';
+
+let PKG_URL     = 'https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v4.3.pkg';
+let ZIP_MAC_URL = 'https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v4.3.zip';
+let EXE_URL     = 'https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v4.3_win.exe';
+let ZIP_WIN_URL = 'https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v4.3_win.zip';
+
+fetch('https://monitor.cpmtracks.com/monitor-install/version.json')
+  .then(r => r.json())
+  .then(d => {
+    const v = d.version || '4.3';
+    document.getElementById('ver-badge').textContent = 'v' + v;
+    PKG_URL     = `https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v${v}.pkg`;
+    ZIP_MAC_URL = d.url || `https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v${v}.zip`;
+    EXE_URL     = d.url_win_exe || `https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v${v}_win.exe`;
+    ZIP_WIN_URL = d.url_win_zip || `https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v${v}_win.zip`;
+  }).catch(() => {});
+
+// Detectar OS automáticamente
+(function detectOS() {
+  const ua = navigator.userAgent;
+  const isWin = /Windows/.test(ua);
+  const isMac = /Macintosh|Mac OS X/.test(ua);
+  const msg = document.getElementById('os-detected-msg');
+
+  if (isWin) {
+    setOS('win');
+    msg.innerHTML = 'Sistema detectado: <b>Windows</b>';
+  } else if (isMac) {
+    setOS('mac');
+    msg.innerHTML = 'Sistema detectado: <b>macOS</b>';
+  } else {
+    setOS('mac');
+    msg.innerHTML = '';
+  }
+})();
+
+function setOS(os) {
+  currentOS = os;
+  document.getElementById('tab-mac').classList.toggle('active', os === 'mac');
+  document.getElementById('tab-win').classList.toggle('active', os === 'win');
+  document.getElementById('dl-mac').style.display  = os === 'mac' ? '' : 'none';
+  document.getElementById('dl-win').style.display  = os === 'win' ? '' : 'none';
+}
+
+function startDownload(type) {
+  let url;
+  if (type === 'pkg')     url = PKG_URL;
+  else if (type === 'zip')     url = ZIP_MAC_URL;
+  else if (type === 'exe')     url = EXE_URL;
+  else if (type === 'win-zip') url = ZIP_WIN_URL;
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showThanks();
+}
+
+function showThanks() {
+  document.getElementById('screen-dl').style.display = 'none';
+  const t = document.getElementById('screen-thanks');
+  t.style.display = 'block';
+  t.style.animation = 'none';
+  void t.offsetWidth;
+  t.style.animation = 'fadeIn .35s ease';
+
+  // Mostrar pasos del OS correcto
+  document.getElementById('steps-mac').style.display = currentOS === 'mac' ? '' : 'none';
+  document.getElementById('steps-win').style.display = currentOS === 'win' ? '' : 'none';
+}
+
+function showDownload() {
+  document.getElementById('screen-thanks').style.display = 'none';
+  const d = document.getElementById('screen-dl');
+  d.style.display = 'block';
+  d.style.animation = 'none';
+  void d.offsetWidth;
+  d.style.animation = 'fadeIn .35s ease';
+}
+</script>
+</body>
+</html>

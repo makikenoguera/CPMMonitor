@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPM Monitor · Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080B0F;--panel:#0F1318;--card:#141920;--border:#1C2230;
+  --borders:#253040;--fg:#E8EAF0;--dim:#7A8499;--faint:#3A4255;
+  --accent:#1A7FD4;--accent2:#0A5A9C;--ok:#2ECC8A;--warn:#F0A030;--bad:#E05555;
+  --sidebar:260px;--topbar:52px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;font-size:13px;overflow:hidden}
+.mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000}
+#login-screen.hidden{display:none}
+.login-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:48px 40px;width:400px}
+.login-logo{background:linear-gradient(135deg,var(--accent) 0%,#0E5FA8 100%);border-radius:12px;padding:10px 18px;display:inline-flex;align-items:center;gap:10px;margin-bottom:28px;box-shadow:0 4px 16px rgba(26,127,212,.4)}
+.login-logo .ll-icon{display:flex;align-items:center}
+.login-logo .ll-text{display:flex;flex-direction:column;line-height:1}
+.login-logo .ll-cpm{color:#fff;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;letter-spacing:.05em}
+.login-logo .ll-monitor{color:rgba(255,255,255,.7);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.25em;text-transform:uppercase}
+.login-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px}
+.login-sub{color:var(--dim);font-size:13px;margin-bottom:28px}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.login-field input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s}
+.login-field input:focus{border-color:var(--accent)}
+.login-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;transition:background .15s}
+.login-btn:hover{background:var(--accent2)}
+.login-error{color:var(--bad);font-size:12px;margin-top:10px;text-align:center;min-height:18px}
+
+/* APP LAYOUT */
+#app{display:grid;grid-template-rows:var(--topbar) 1fr;grid-template-columns:var(--sidebar) 1fr;height:100vh;transition:grid-template-columns .25s ease}
+#app.collapsed{--sidebar:56px}
+
+/* TOPBAR */
+#topbar{grid-column:1/-1;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px 0 0;z-index:20}
+.topbar-brand{width:var(--sidebar);flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 16px;transition:width .25s ease;overflow:hidden}
+#app.collapsed .topbar-brand{width:56px}
+.brand-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent) 0%,#0E5FA8 100%);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(26,127,212,.35)}
+.brand-name{font-family:'Syne',sans-serif;white-space:nowrap;display:flex;flex-direction:column;gap:0px;line-height:1}
+.brand-name .bn-top{font-size:15px;font-weight:800;letter-spacing:.06em;color:var(--fg)}
+.brand-name .bn-sub{font-size:9px;font-weight:600;letter-spacing:.22em;color:var(--accent);text-transform:uppercase}
+#collapse-btn{background:transparent;border:none;color:var(--dim);cursor:pointer;padding:6px;border-radius:6px;margin-left:auto;flex-shrink:0}
+#collapse-btn:hover{color:var(--fg)}
+.topbar-center{flex:1;display:flex;align-items:center;padding:0 20px;gap:12px}
+.topbar-tabs{display:flex;gap:2px;background:var(--card);border-radius:8px;padding:3px}
+.tab{padding:5px 14px;border-radius:6px;color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;font-family:inherit;transition:all .15s;white-space:nowrap}
+.tab:hover{color:var(--fg)}
+.tab.active{background:var(--panel);color:var(--fg);box-shadow:0 0 0 1px var(--border)}
+.tab.admin-tab{color:var(--warn)}
+.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.user-badge{font-size:11px;color:var(--dim);padding:4px 10px;border:1px solid var(--border);border-radius:20px;display:flex;align-items:center;gap:6px}
+.user-badge strong{color:var(--fg)}
+.logout-btn{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:inherit}
+.logout-btn:hover{color:var(--bad);border-color:var(--bad)}
+.cfg-btn{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:inherit}
+.cfg-btn:hover{color:var(--fg)}
+
+/* SIDEBAR */
+#sidebar{background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;overflow-x:hidden;padding:16px 12px;display:flex;flex-direction:column;gap:6px}
+.sidebar-section{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);padding:8px 8px 4px;white-space:nowrap;overflow:hidden}
+#app.collapsed .sidebar-section{opacity:0}
+.sidebar-field{display:flex;flex-direction:column;gap:4px;padding:0 0 6px}
+.sidebar-label{font-size:10px;font-weight:600;color:var(--dim);letter-spacing:.06em;padding:0 4px;white-space:nowrap;overflow:hidden}
+#app.collapsed .sidebar-label{opacity:0}
+.sidebar-input,.sidebar-select{width:100%;background:var(--card);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit;outline:none}
+.sidebar-input:focus,.sidebar-select:focus{border-color:var(--accent)}
+#app.collapsed .sidebar-input,#app.collapsed .sidebar-select{opacity:0;pointer-events:none}
+.sidebar-divider{height:1px;background:var(--border);margin:8px 0}
+.apply-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.apply-btn:hover{background:var(--accent2)}
+#app.collapsed .apply-btn,#app.collapsed .clear-btn{opacity:0;pointer-events:none}
+.clear-btn{width:100%;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;font-family:inherit}
+
+/* MAIN */
+#main{overflow-y:auto}
+.view{display:none;padding:24px;flex-direction:column;gap:20px}
+.view.active{display:flex}
+
+/* KPIS */
+.kpi-grid{display:grid;gap:12px}
+.kpi-grid-4{grid-template-columns:repeat(4,1fr)}
+.kpi-grid-5{grid-template-columns:repeat(5,1fr)}
+.kpi-grid-3{grid-template-columns:repeat(3,1fr)}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:12px 12px 0 0}
+.kpi.accent::before{background:var(--accent)}
+.kpi.ok::before{background:var(--ok)}
+.kpi.warn::before{background:var(--warn)}
+.kpi-label{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.kpi-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;line-height:1;letter-spacing:-1px}
+.kpi-value.c-accent{color:var(--accent)}
+.kpi-value.c-ok{color:var(--ok)}
+.kpi-value.c-warn{color:var(--warn)}
+.kpi-sub{font-size:11px;color:var(--faint);margin-top:6px}
+
+/* CHARTS */
+.charts-row{display:grid;grid-template-columns:280px 1fr;gap:16px}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.chart-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:16px}
+
+/* TABLE */
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.table-header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.table-title{font-size:13px;font-weight:600}
+.table-count{font-size:11px;color:var(--dim);font-family:'IBM Plex Mono',monospace}
+.filter-pills{display:flex;gap:2px;background:var(--panel);border-radius:8px;padding:3px;margin-left:auto}
+.pill{background:transparent;border:none;color:var(--dim);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+.pill:hover{color:var(--fg)}
+.pill.active{background:var(--card);color:var(--fg);box-shadow:0 0 0 1px var(--border)}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--panel);color:var(--faint);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:10px 18px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;cursor:pointer;white-space:nowrap;user-select:none}
+thead th:hover{color:var(--dim)}
+thead th.asc::after{content:" ▲";color:var(--accent)}
+thead th.desc::after{content:" ▼";color:var(--accent)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#ffffff06}
+td{padding:11px 18px;font-size:12px;color:var(--dim)}
+.td-p{color:var(--fg);font-weight:500}
+.td-a{color:var(--accent)}
+.td-ok{color:var(--ok);font-weight:600}
+.td-warn{color:var(--warn);font-weight:600}
+.td-bad{color:var(--bad)}
+.td-f{color:var(--faint);font-size:11px}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700}
+.badge-ok{background:#2ECC8A18;color:var(--ok)}
+.badge-bad{background:#E0555518;color:var(--bad)}
+.badge-warn{background:#F0A03018;color:var(--warn)}
+.pct-wrap{display:flex;align-items:center;gap:8px}
+.pct-bar{flex:1;height:3px;background:var(--border);border-radius:2px;min-width:60px}
+.pct-fill{height:100%;border-radius:2px}
+.pct-num{font-size:10px;font-weight:700;min-width:30px;text-align:right;font-family:'IBM Plex Mono',monospace}
+.empty{padding:48px;text-align:center;color:var(--faint);font-size:13px}
+
+/* ADMIN PANEL */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.admin-section{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.admin-section-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+.admin-section-title{font-size:13px;font-weight:600}
+.btn-add{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-add:hover{background:var(--accent2)}
+.btn-sm{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:inherit}
+.btn-sm:hover{color:var(--fg);border-color:var(--borders)}
+.btn-sm.danger:hover{color:var(--bad);border-color:var(--bad)}
+
+/* TABLE FILTER ROW */
+.filter-row th{padding:6px 10px !important;background:var(--bg) !important;border-bottom:1px solid var(--border)}
+.tbl-filter{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--fg);border-radius:6px;padding:5px 10px;font-size:11px;font-family:inherit;outline:none}
+.tbl-filter:focus{border-color:var(--accent)}
+.tbl-filter::placeholder{color:var(--faint)}
+
+/* PAGINATION */
+.pag-wrap{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--dim)}
+.pag-info{flex:1}
+.pag-sel{background:var(--panel);border:1px solid var(--border);color:var(--fg);border-radius:6px;padding:3px 8px;font-size:11px;font-family:inherit;outline:none;cursor:pointer}
+.pag-btns{display:flex;align-items:center;gap:4px}
+.pag-btn{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:5px;padding:2px 8px;font-size:13px;cursor:pointer;line-height:1.4}
+.pag-btn:hover:not([disabled]){color:var(--fg);border-color:var(--borders)}
+.pag-btn[disabled]{opacity:.3;cursor:default}
+.pag-cur{font-family:'IBM Plex Mono',monospace;font-size:11px;min-width:52px;text-align:center}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:#00000099;z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:28px;width:460px;animation:slideUp .2s ease}
+@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:22px}
+.mfield{margin-bottom:14px}
+.mfield label{display:block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+.mfield input,.mfield select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none}
+.mfield input:focus,.mfield select:focus{border-color:var(--accent)}
+.mfield .hint{font-size:11px;color:var(--faint);margin-top:4px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:18px;border-top:1px solid var(--border)}
+.btn{border-radius:8px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+.btn-p{background:var(--accent);color:#fff}
+.btn-p:hover{background:var(--accent2)}
+.btn-s{background:transparent;border:1px solid var(--border);color:var(--dim)}
+.btn-s:hover{color:var(--fg)}
+
+/* MODAL CONFIG */
+.cfg-overlay{display:none;position:fixed;inset:0;background:#00000099;z-index:200;align-items:center;justify-content:center}
+.cfg-overlay.open{display:flex}
+
+/* STATUS */
+#statusbar{position:fixed;bottom:0;left:0;right:0;height:24px;background:var(--panel);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;font-size:10px;color:var(--faint);z-index:10;font-family:'IBM Plex Mono',monospace}
+.s-dot{width:5px;height:5px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+body{padding-bottom:24px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div><div class="login-logo">
+      <div class="ll-icon"><svg width="20" height="18" viewBox="0 0 18 16" fill="none"><rect x="0" y="5" width="3" height="9" rx="1.5" fill="white"/><rect x="5" y="1" width="3" height="14" rx="1.5" fill="white"/><rect x="10" y="3" width="3" height="11" rx="1.5" fill="white" opacity=".85"/><rect x="15" y="6" width="3" height="7" rx="1.5" fill="white" opacity=".6"/></svg></div>
+      <div class="ll-text"><span class="ll-cpm">CPM</span><span class="ll-monitor">MONITOR</span></div>
+    </div></div>
+    <div class="login-title">Bienvenido</div>
+    <div class="login-sub">Ingresa con tus credenciales para continuar</div>
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="tu@email.com" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>Contraseña</label>
+      <div style="position:relative">
+        <input type="password" id="login-pwd" placeholder="••••••••" autocomplete="current-password" style="padding-right:40px">
+        <button onclick="togglePwd()" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#7A8499;padding:4px;line-height:1" id="pwd-eye">
+          <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Ingresar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+<!-- TOPBAR -->
+<header id="topbar">
+  <div class="topbar-brand">
+    <div class="brand-icon"><svg width="18" height="16" viewBox="0 0 18 16" fill="none"><rect x="0" y="5" width="3" height="9" rx="1.5" fill="white"/><rect x="5" y="1" width="3" height="14" rx="1.5" fill="white"/><rect x="10" y="3" width="3" height="11" rx="1.5" fill="white" opacity=".85"/><rect x="15" y="6" width="3" height="7" rx="1.5" fill="white" opacity=".6"/></svg></div>
+    <span class="brand-name"><span class="bn-top">CPM</span><span class="bn-sub">MONITOR</span></span>
+    <button id="collapse-btn" onclick="toggleSidebar()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+  </div>
+  <div class="topbar-center">
+    <div class="topbar-tabs" id="main-tabs">
+      <button class="tab active" onclick="showView('reportes',this)">Reportes</button>
+      <button class="tab" onclick="showView('bar',this)">Establecimiento</button>
+      <button class="tab" onclick="showView('artista',this)">Artistas</button>
+      <button class="tab admin-tab" id="tab-admin" style="display:none" onclick="showView('admin',this)">⚙ Admin</button>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-badge"><span id="user-nombre">—</span> · <strong id="user-rol">—</strong></div>
+    <button class="cfg-btn" onclick="openConfig()">Precios</button>
+    <button class="logout-btn" onclick="doLogout()">Salir</button>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-section">Filtros</div>
+  <div class="sidebar-field">
+    <div class="sidebar-label">Período</div>
+    <select class="sidebar-select" id="f-tipo-fecha" onchange="toggleFecha()">
+      <option value="mes">Por mes</option>
+      <option value="dia">Por día</option>
+      <option value="rango">Por rango</option>
+    </select>
+  </div>
+  <div class="sidebar-field" id="f-mes-wrap">
+    <div class="sidebar-label">Mes</div>
+    <select class="sidebar-select" id="f-mes"></select>
+  </div>
+  <div class="sidebar-field" id="f-dia-wrap" style="display:none">
+    <div class="sidebar-label">Día</div>
+    <input type="date" class="sidebar-input" id="f-dia">
+  </div>
+  <div class="sidebar-field" id="f-rango-wrap" style="display:none">
+    <div class="sidebar-label">Desde</div>
+    <input type="date" class="sidebar-input" id="f-desde">
+    <div class="sidebar-label" style="margin-top:6px">Hasta</div>
+    <input type="date" class="sidebar-input" id="f-hasta">
+  </div>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-field" id="f-local-field">
+    <div class="sidebar-label">Local</div>
+    <select class="sidebar-select" id="f-local"><option value="">Todos los locales</option></select>
+  </div>
+  <div class="sidebar-field">
+    <div class="sidebar-label">Fuente</div>
+    <select class="sidebar-select" id="f-fuente">
+      <option value="">Todas</option>
+      <option value="Spotify">Spotify</option>
+      <option value="YouTube">YouTube</option>
+      <option value="Local (QuickTime)">Local (QuickTime)</option>
+      <option value="Apple Music">Apple Music</option>
+    </select>
+  </div>
+  <div class="sidebar-field">
+    <div class="sidebar-label">Artista o título</div>
+    <input type="text" class="sidebar-input" id="f-buscar" placeholder="Buscar...">
+  </div>
+  <div class="sidebar-divider"></div>
+  <button class="apply-btn" onclick="applyFilters()">▶ Aplicar</button>
+  <div style="height:4px"></div>
+  <button class="clear-btn" onclick="clearFilters()">✕ Limpiar</button>
+</aside>
+
+<!-- MAIN -->
+<main id="main">
+
+  <!-- REPORTES -->
+  <div id="view-reportes" class="view active">
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi accent"><div class="kpi-label">Reproducciones</div><div class="kpi-value c-accent mono" id="r-total">—</div><div class="kpi-sub">este período</div></div>
+      <div class="kpi"><div class="kpi-label">Locales activos</div><div class="kpi-value mono" id="r-loc">—</div><div class="kpi-sub">con reproducciones</div></div>
+      <div class="kpi ok"><div class="kpi-label">Ingresos CPM</div><div class="kpi-value c-ok mono" id="r-earn">—</div><div class="kpi-sub" id="r-earn-sub">COP del período</div></div>
+      <div class="kpi warn"><div class="kpi-label">Ingreso establecimientos</div><div class="kpi-value c-warn mono" id="r-earn-estab">—</div><div class="kpi-sub" id="r-estab-sub">% del precio</div></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Por fuente</div>
+        <canvas id="chart-dona" width="240" height="180"></canvas>
+        <div id="dona-legend" style="margin-top:12px;display:flex;flex-direction:column;gap:5px"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top 10 canciones</div>
+        <canvas id="chart-bars" height="220"></canvas>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-title">Locales</span>
+        <span class="table-count" id="r-loc-count">0</span>
+        <input type="text" style="background:var(--panel);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:5px 10px;font-size:12px;font-family:inherit;outline:none;width:180px;margin-left:8px" placeholder="Buscar local..." oninput="filterRepTable(this.value)">
+        <div class="filter-pills">
+          <button class="pill active" onclick="setRepFilter('all',this)">Todos</button>
+          <button class="pill" onclick="setRepFilter('active',this)">Con plays</button>
+        </div>
+      </div>
+      <table><thead>
+        <tr>
+          <th onclick="sortRep(0)">Local</th><th onclick="sortRep(1)">ID</th><th onclick="sortRep(2)">Ciudad</th>
+          <th onclick="sortRep(3)">Plays</th><th onclick="sortRep(4)">CPM</th>
+          <th onclick="sortRep(5)">Ingresos CPM</th><th onclick="sortRep(6)">Ingreso estab.</th><th>Fuentes</th>
+        </tr>
+        <tr class="filter-row">
+          <th colspan="8"><input class="tbl-filter" placeholder="Filtrar local, ID, ciudad…" oninput="repSearch=this.value;_pags.rep.page=0;renderRepTable()"></th>
+        </tr>
+      </thead>
+      <tbody id="r-tbody"><tr><td colspan="8" class="empty">Aplica filtros para ver datos</td></tr></tbody></table>
+      <div id="pag-rep"></div>
+    </div>
+  </div>
+
+  <!-- ESTABLECIMIENTO -->
+  <div id="view-bar" class="view">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--dim)">Establecimiento:</span>
+      <select id="bar-local-dd" style="background:var(--card);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:7px 12px;font-size:12px;font-family:inherit;outline:none;min-width:220px" onchange="barDdChanged()">
+        <option value="">— Seleccionar —</option>
+      </select>
+      <button class="btn-add" onclick="loadBar()">Buscar</button>
+    </div>
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi accent"><div class="kpi-label">Plays totales</div><div class="kpi-value c-accent mono" id="b-total">—</div></div>
+      <div class="kpi accent"><div class="kpi-label">Plays CPM</div><div class="kpi-value c-accent mono" id="b-cpm">—</div></div>
+      <div class="kpi ok"><div class="kpi-label">Ingresos CPM</div><div class="kpi-value c-ok mono" id="b-earn">—</div></div>
+      <div class="kpi warn"><div class="kpi-label">Ingreso establecimiento</div><div class="kpi-value c-warn mono" id="b-earn-e">—</div></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Por fuente</div>
+        <canvas id="chart-dona-bar" width="240" height="180"></canvas>
+        <div id="dona-legend-bar" style="margin-top:12px;display:flex;flex-direction:column;gap:5px"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top 10 canciones</div>
+        <canvas id="chart-bars-bar" height="220"></canvas>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-title">Canciones</span>
+        <span class="table-count" id="b-count">0</span>
+        <input type="text" style="background:var(--panel);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:5px 10px;font-size:12px;font-family:inherit;outline:none;width:200px;margin-left:8px" placeholder="Buscar canción..." oninput="filterBarTable(this.value)">
+        <div class="filter-pills">
+          <button class="pill active" onclick="setBarFilter('all',this)">Todas</button>
+          <button class="pill" onclick="setBarFilter('paid',this)">Se pagan</button>
+          <button class="pill" onclick="setBarFilter('unpaid',this)">No pagadas</button>
+        </div>
+      </div>
+      <table><thead><tr>
+        <th onclick="sortBar(0)">Artista</th><th onclick="sortBar(1)">Canción</th><th onclick="sortBar(2)">ISRC</th>
+        <th onclick="sortBar(3)">Fuente</th><th onclick="sortBar(4)">Veces</th><th onclick="sortBar(5)">% Reprod.</th>
+        <th onclick="sortBar(6)">Se paga</th><th onclick="sortBar(7)">Ingreso CPM</th><th onclick="sortBar(8)">Ingreso estab.</th>
+      </tr></thead>
+      <tbody id="b-tbody"><tr><td colspan="9" class="empty">Selecciona un establecimiento</td></tr></tbody></table>
+      <div id="pag-bar"></div>
+    </div>
+  </div>
+
+  <!-- ARTISTAS -->
+  <div id="view-artista" class="view">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <input type="text" style="background:var(--card);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:7px 12px;font-size:12px;font-family:inherit;outline:none;width:200px" placeholder="Nombre del artista..." id="ar-nombre" oninput="filterArtistas()">
+      <select id="ar-sel" style="background:var(--card);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:7px 12px;font-size:12px;font-family:inherit;outline:none;min-width:200px" onchange="arSelChanged()">
+        <option value="">— Seleccionar artista —</option>
+      </select>
+      <input type="text" style="background:var(--card);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:7px 12px;font-size:12px;font-family:inherit;outline:none;width:160px" placeholder="ISRC..." id="ar-isrc">
+      <button class="btn-add" onclick="loadArtista()">Buscar</button>
+    </div>
+    <div class="kpi-grid kpi-grid-3">
+      <div class="kpi accent"><div class="kpi-label">Total reproducciones</div><div class="kpi-value c-accent mono" id="ar-total">—</div></div>
+      <div class="kpi ok"><div class="kpi-label">Se pagan</div><div class="kpi-value c-ok mono" id="ar-comp">—</div></div>
+      <div class="kpi"><div class="kpi-label">Locales donde suena</div><div class="kpi-value mono" id="ar-loc">—</div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-header"><span class="table-title">Por local</span><span class="table-count" id="ar-count">0</span></div>
+      <table><thead><tr><th>Local</th><th>ID</th><th>Ciudad</th><th>Veces</th><th>Se pagan</th><th>% Promedio</th></tr></thead>
+      <tbody id="ar-tbody"><tr><td colspan="6" class="empty">Busca por artista o ISRC</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="view-admin" class="view">
+    <div class="admin-grid">
+
+      <!-- LOCALES -->
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <span class="admin-section-title">Locales / Establecimientos</span>
+          <button class="btn-add" onclick="openModalLocal()">+ Nuevo local</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Nombre</th><th>ID</th><th>Ciudad</th><th>Tipo</th><th>Estado</th><th></th></tr>
+            <tr class="filter-row"><th colspan="6"><input id="flt-loc" class="tbl-filter" placeholder="Filtrar…" oninput="_pags.admin_loc.page=0;_renderAdminLocales()"></th></tr>
+          </thead>
+          <tbody id="admin-locales-tbody"><tr><td colspan="6" class="empty">Cargando...</td></tr></tbody>
+        </table>
+        <div id="pag-admin_loc"></div>
+      </div>
+
+      <!-- USUARIOS -->
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <span class="admin-section-title">Usuarios</span>
+          <button class="btn-add" onclick="openModalUsuario()">+ Nuevo usuario</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Establecimiento</th><th>Estado</th><th></th></tr>
+            <tr class="filter-row"><th colspan="6"><input id="flt-usr" class="tbl-filter" placeholder="Filtrar nombre, email o establecimiento…" oninput="_pags.admin_usr.page=0;_renderAdminUsuarios()"></th></tr>
+          </thead>
+          <tbody id="admin-usuarios-tbody"><tr><td colspan="6" class="empty">Cargando...</td></tr></tbody>
+        </table>
+        <div id="pag-admin_usr"></div>
+      </div>
+    </div>
+
+    <!-- MENSAJES PUSH -->
+    <div class="admin-section" style="grid-column:1/-1">
+      <div class="admin-section-header">
+        <span class="admin-section-title">📣 Mensajes push a establecimientos</span>
+        <button class="btn-add" onclick="openModalMensaje()">+ Nuevo mensaje</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50px">Img</th><th>Título</th><th>Destinatario</th><th>Creado</th><th>Vence</th><th>Leídos</th><th>Estado</th><th></th>
+          </tr>
+          <tr class="filter-row"><th colspan="8"><input id="flt-msg" class="tbl-filter" placeholder="Filtrar por título…" oninput="_pags.admin_msg.page=0;_renderAdminMensajes()"></th></tr>
+        </thead>
+        <tbody id="admin-mensajes-tbody"><tr><td colspan="8" class="empty">Cargando...</td></tr></tbody>
+      </table>
+      <div id="pag-admin_msg"></div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- MODAL LOCAL -->
+<div class="overlay" id="modal-local">
+  <div class="modal" style="width:560px">
+    <h3 id="modal-local-title">Nuevo establecimiento</h3>
+    <input type="hidden" id="ml-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="mfield" style="grid-column:1/-1">
+        <label>Nombre del establecimiento</label>
+        <input type="text" id="ml-nombre" placeholder="Ej: Bar La Esquina">
+      </div>
+      <div class="mfield">
+        <label>Tipo de comercio</label>
+        <select id="ml-tipo">
+          <option value="Bar / Pub">Bar / Pub</option>
+          <option value="Restaurante">Restaurante</option>
+          <option value="Peluquería">Peluquería</option>
+          <option value="Gimnasio">Gimnasio</option>
+          <option value="Tienda">Tienda</option>
+          <option value="Hotel">Hotel</option>
+          <option value="Café">Café</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="mfield">
+        <label>Ciudad</label>
+        <input type="text" id="ml-ciudad" placeholder="Bogotá">
+      </div>
+      <div class="mfield">
+        <label>Zona / Barrio</label>
+        <input type="text" id="ml-zona" placeholder="Centro">
+      </div>
+      <div class="mfield">
+        <label>País</label>
+        <input type="text" id="ml-pais" placeholder="Colombia" value="Colombia">
+      </div>
+      <div class="mfield">
+        <label>Dirección</label>
+        <input type="text" id="ml-direccion" placeholder="Calle 123 #45-67">
+      </div>
+      <div class="mfield" style="grid-column:1/-1" id="ml-sep" style="border-top:1px solid var(--border);padding-top:12px">
+        <label style="color:var(--accent)">Datos de contacto</label>
+      </div>
+      <div class="mfield">
+        <label>Nombre del contacto</label>
+        <input type="text" id="ml-contacto" placeholder="Nombre del encargado">
+      </div>
+      <div class="mfield">
+        <label>Email</label>
+        <input type="email" id="ml-email" placeholder="contacto@local.com">
+      </div>
+      <div class="mfield">
+        <label>Teléfono</label>
+        <input type="tel" id="ml-telefono" placeholder="+57 300 000 0000">
+      </div>
+    </div>
+    <div id="ml-usuarios-section" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Usuarios vinculados</div>
+      <div id="ml-usuarios-list" style="display:flex;flex-direction:column;gap:6px;font-size:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('modal-local')">Cancelar</button>
+      <button class="btn btn-p" onclick="guardarLocal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USUARIO -->
+<div class="overlay" id="modal-usuario">
+  <div class="modal">
+    <h3 id="modal-usuario-title">Nuevo usuario</h3>
+    <input type="hidden" id="mu-id">
+    <div class="mfield">
+      <label>Nombre completo</label>
+      <input type="text" id="mu-nombre" placeholder="Nombre del usuario">
+    </div>
+    <div class="mfield">
+      <label>Email</label>
+      <input type="email" id="mu-email" placeholder="usuario@email.com">
+    </div>
+    <div class="mfield" id="mu-pwd-field">
+      <label>Contraseña temporal</label>
+      <input type="text" id="mu-pwd" placeholder="Mínimo 6 caracteres">
+      <div class="hint" id="mu-pwd-hint">El usuario deberá cambiarla en el primer acceso</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="mfield">
+        <label>Rol</label>
+        <select id="mu-rol" onchange="toggleLocalField()">
+          <option value="establecimiento">Establecimiento</option>
+          <option value="cpm_interno">CPM Interno</option>
+          <option value="superadmin">Super Admin</option>
+        </select>
+      </div>
+      <div class="mfield" id="mu-local-field">
+        <label>Local asignado</label>
+        <select id="mu-local">
+          <option value="">— Sin local —</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-p" id="mu-submit-btn" onclick="guardarUsuario()">Crear usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MENSAJE PUSH -->
+<div class="overlay" id="modal-mensaje">
+  <div class="modal" style="width:520px">
+    <h3>Nuevo mensaje push</h3>
+    <div class="mfield">
+      <label>Título</label>
+      <input type="text" id="mm-titulo" placeholder="Ej: Actualización del sistema">
+    </div>
+    <div class="mfield">
+      <label>Cuerpo del mensaje</label>
+      <textarea id="mm-cuerpo" rows="3" placeholder="Texto del mensaje para los establecimientos..." style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical"></textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="mfield">
+        <label>URL de imagen (opcional)</label>
+        <input type="url" id="mm-imagen" placeholder="https://...">
+      </div>
+      <div class="mfield">
+        <label>Texto del botón (opcional)</label>
+        <input type="text" id="mm-btn-texto" placeholder="Ver más">
+      </div>
+      <div class="mfield" style="grid-column:1/-1">
+        <label>URL del botón (opcional)</label>
+        <input type="url" id="mm-btn-url" placeholder="https://...">
+      </div>
+      <div class="mfield">
+        <label>Destinatario</label>
+        <select id="mm-dest" onchange="toggleMsgDest()">
+          <option value="todos">Todos los establecimientos</option>
+          <option value="local">Local específico</option>
+          <option value="tipo_comercio">Tipo de comercio</option>
+        </select>
+      </div>
+      <div class="mfield" id="mm-local-field" style="display:none">
+        <label>Local</label>
+        <select id="mm-local"><option value="">— Seleccionar —</option></select>
+      </div>
+      <div class="mfield" id="mm-tipo-field" style="display:none">
+        <label>Tipo de comercio</label>
+        <select id="mm-tipo-comercio">
+          <option value="Bar / Pub">Bar / Pub</option>
+          <option value="Restaurante">Restaurante</option>
+          <option value="Peluquería">Peluquería</option>
+          <option value="Gimnasio">Gimnasio</option>
+          <option value="Tienda">Tienda</option>
+          <option value="Hotel">Hotel</option>
+          <option value="Café">Café</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="mfield">
+        <label>Vence en (días)</label>
+        <input type="number" id="mm-expira" value="7" min="1" max="365">
+        <div class="hint">A partir de hoy</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('modal-mensaje')">Cancelar</button>
+      <button class="btn btn-p" onclick="crearMensaje()">Enviar mensaje</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIG -->
+<div class="overlay" id="modal-cfg">
+  <div class="modal">
+    <h3>⚙ Configuración de precios</h3>
+    <div class="mfield">
+      <label>Precio por reproducción (COP)</label>
+      <input type="number" id="cfg-precio" value="500" min="0">
+      <div class="hint">Valor por canción reproducida ≥ umbral %</div>
+    </div>
+    <div class="mfield">
+      <label>% Ingreso para establecimientos</label>
+      <input type="number" id="cfg-pct" value="20" min="0" max="100">
+    </div>
+    <div class="mfield">
+      <label>Umbral de reproducción pagada (%)</label>
+      <input type="number" id="cfg-umbral" value="90" min="1" max="100">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('modal-cfg')">Cancelar</button>
+      <button class="btn btn-p" onclick="saveConfig()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="statusbar">
+  <div class="s-dot"></div>
+  <span id="s-msg">Conectado</span>
+  <span style="margin-left:auto" id="s-time"></span>
+</div>
+
+<script>
+const API = 'https://monitor.cpmtracks.com';
+let SESSION = null; // {token, nombre, rol, id_local}
+let CFG = {precio:500, pct:20, umbral:90};
+let repData=[], barData=[], repFilter='all', barFilter='all';
+let repSort={col:-1,asc:true}, barSort={col:-1,asc:true};
+let repSearch='', barSearch='';
+let allLocales=[], allArtistas=[];
+let repFilterActive='all';
+
+// ── PAGINATION STATE ──────────────────────────────────────────────
+const PAG_SIZES=[10,25,50,100,0]; // 0 = All
+const _pags={
+  rep:{page:0,size:25},
+  bar:{page:0,size:25},
+  admin_loc:{page:0,size:25},
+  admin_usr:{page:0,size:25},
+  admin_msg:{page:0,size:25},
+};
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function fuenteColor(f){
+  if(!f)return'#7A8499';
+  const fu=f.toLowerCase();
+  if(fu.includes('spotify'))return'#1DB954';
+  if(fu.includes('youtube'))return'#FF0000';
+  if(fu.includes('apple'))return'#A0A0A0';
+  if(fu.includes('local')||fu.includes('quicktime'))return'#1A7FD4';
+  return'#8B5CF6';
+}
+function fuenteDot(f){
+  return`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:7px;height:7px;border-radius:50%;background:${fuenteColor(f)};flex-shrink:0"></span>${f}</span>`;
+}
+function fuentesDots(arr){
+  if(!arr||!arr.length)return'—';
+  return arr.map(fuenteDot).join('<br>');
+}
+
+// ── PAGINATION ENGINE ─────────────────────────────────────────────
+function renderPag(key,total){
+  const pg=_pags[key];
+  const el=document.getElementById(`pag-${key}`);
+  if(!el)return;
+  const size=pg.size||total||1;
+  const pages=pg.size?Math.ceil(total/size):1;
+  const cur=pg.page;
+  const selOpts=PAG_SIZES.map(s=>`<option value="${s}" ${s===pg.size?'selected':''}>${s||'Todos'}</option>`).join('');
+  el.innerHTML=`<div class="pag-wrap">
+    <span class="pag-info">${total} registros</span>
+    <select class="pag-sel" onchange="setPagSize('${key}',+this.value)">${selOpts}</select>
+    <div class="pag-btns">
+      <button class="pag-btn" ${cur===0?'disabled':''} onclick="setPagPage('${key}',${cur-1})">‹</button>
+      <span class="pag-cur">${pages>1?`${cur+1} / ${pages}`:''}</span>
+      <button class="pag-btn" ${cur>=pages-1?'disabled':''} onclick="setPagPage('${key}',${cur+1})">›</button>
+    </div>
+  </div>`;
+}
+function setPagPage(key,p){_pags[key].page=p;_rerenderTable(key);}
+function setPagSize(key,s){_pags[key].size=s;_pags[key].page=0;_rerenderTable(key);}
+function _rerenderTable(key){
+  if(key==='rep')renderRepTable();
+  else if(key==='bar')renderBarTable();
+  else if(key==='admin_loc')_renderAdminLocales();
+  else if(key==='admin_usr')_renderAdminUsuarios();
+  else if(key==='admin_msg')_renderAdminMensajes();
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-pwd').value;
+  const err   = document.getElementById('login-error');
+  err.textContent = '';
+  if(!email||!pwd){err.textContent='Completa todos los campos';return;}
+  try{
+    const r = await fetch(`${API}/auth/login`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, password:pwd})
+    });
+    const d = await r.json();
+    if(!r.ok){err.textContent = d.error||'Credenciales incorrectas';return;}
+    SESSION = {token:d.session_token||d.token, nombre:d.nombre, rol:d.rol, id_local:d.id_local||''};
+    localStorage.setItem('cpm_session', JSON.stringify(SESSION));
+    iniciarApp();
+  }catch(e){err.textContent='Error de conexión';}
+}
+
+function togglePwd(){
+  const inp = document.getElementById('login-pwd');
+  const icon = document.getElementById('eye-icon');
+  if(inp.type === 'password'){
+    inp.type = 'text';
+    icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    inp.type = 'password';
+    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+document.getElementById('login-pwd').addEventListener('keydown', e=>{if(e.key==='Enter')doLogin();});
+
+function doLogout(){
+  SESSION = null;
+  localStorage.removeItem('cpm_session');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('login-email').value='';
+  document.getElementById('login-pwd').value='';
+  document.getElementById('login-error').textContent='';
+}
+
+function authHeader(){
+  return SESSION ? {'X-Session-Token': SESSION.token, 'Content-Type':'application/json'} : {};
+}
+
+function iniciarApp(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('user-nombre').textContent = SESSION.nombre;
+  document.getElementById('user-rol').textContent = SESSION.rol;
+
+  // Mostrar tab admin solo para superadmin y cpm_interno
+  const tabAdmin = document.getElementById('tab-admin');
+  if(['superadmin','cpm_interno'].includes(SESSION.rol)){
+    tabAdmin.style.display = '';
+  }
+
+  // Si es establecimiento, ocultar filtro de locales y fijar su local
+  if(SESSION.rol === 'establecimiento'){
+    document.getElementById('f-local-field').style.display = 'none';
+    document.getElementById('f-local').value = SESSION.id_local;
+  }
+
+  loadConfig();
+  fillMeses();
+  loadLocalesDropdown();
+  loadReportes();
+  setInterval(()=>document.getElementById('s-time').textContent=new Date().toLocaleTimeString('es'),1000);
+}
+
+// Al cargar, intentar restaurar sesión
+window.addEventListener('load', ()=>{
+  const saved = localStorage.getItem('cpm_session');
+  if(saved){
+    try{
+      SESSION = JSON.parse(saved);
+      iniciarApp();
+    }catch(e){ doLogout(); }
+  }
+});
+
+// ── CONFIG ────────────────────────────────────────────────────────
+function loadConfig(){
+  try{const s=JSON.parse(localStorage.getItem('cpm_cfg')||'{}');CFG={precio:s.precio||500,pct:s.pct||20,umbral:s.umbral||90};}catch(e){}
+  document.getElementById('cfg-precio').value=CFG.precio;
+  document.getElementById('cfg-pct').value=CFG.pct;
+  document.getElementById('cfg-umbral').value=CFG.umbral;
+}
+function saveConfig(){
+  CFG={precio:+document.getElementById('cfg-precio').value||500,pct:+document.getElementById('cfg-pct').value||20,umbral:+document.getElementById('cfg-umbral').value||90};
+  localStorage.setItem('cpm_cfg',JSON.stringify(CFG));
+  closeModal('modal-cfg');
+  applyFilters();
+}
+function openConfig(){ loadConfig(); document.getElementById('modal-cfg').classList.add('open'); }
+
+// ── SIDEBAR ───────────────────────────────────────────────────────
+function toggleSidebar(){
+  document.getElementById('app').classList.toggle('collapsed');
+  const collapsed=document.getElementById('app').classList.contains('collapsed');
+  document.getElementById('collapse-btn').innerHTML=collapsed
+    ?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>'
+    :'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>';
+}
+
+// ── DATES ─────────────────────────────────────────────────────────
+function getMeses(){
+  const m=[],n=new Date();
+  for(let i=0;i<12;i++){const d=new Date(n.getFullYear(),n.getMonth()-i,1);m.push({val:d.toISOString().slice(0,7),lbl:d.toLocaleString('es',{month:'long',year:'numeric'})});}
+  return m;
+}
+function fillMeses(){
+  const m=getMeses();
+  document.getElementById('f-mes').innerHTML=m.map(x=>`<option value="${x.val}">${x.lbl}</option>`).join('');
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('f-dia').value=today;
+  document.getElementById('f-desde').value=new Date(new Date().setDate(1)).toISOString().slice(0,10);
+  document.getElementById('f-hasta').value=today;
+}
+function toggleFecha(){
+  const v=document.getElementById('f-tipo-fecha').value;
+  document.getElementById('f-mes-wrap').style.display=v==='mes'?'':'none';
+  document.getElementById('f-dia-wrap').style.display=v==='dia'?'':'none';
+  document.getElementById('f-rango-wrap').style.display=v==='rango'?'':'none';
+}
+function getDateParams(){
+  const v=document.getElementById('f-tipo-fecha').value;
+  if(v==='mes') return {mes:document.getElementById('f-mes').value};
+  if(v==='dia'){const d=document.getElementById('f-dia').value;return{desde:d,hasta:d};}
+  return{desde:document.getElementById('f-desde').value,hasta:document.getElementById('f-hasta').value};
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function fmt(n){return(n||0).toLocaleString('es-CO');}
+function fmtCOP(n){return'$'+Math.round(n||0).toLocaleString('es-CO')+' COP';}
+function pctC(p){return p>=CFG.umbral?'#2ECC8A':p>=50?'#F0A030':'#E05555';}
+function pctBar(p){const c=pctC(p);return`<div class="pct-wrap"><div class="pct-bar"><div class="pct-fill" style="width:${Math.min(p,100)}%;background:${c}"></div></div><span class="pct-num" style="color:${c}">${Math.round(p)}%</span></div>`;}
+function earnCPM(plays){return plays*CFG.precio;}
+function earnEstab(plays){return plays*CFG.precio*CFG.pct/100;}
+
+// ── VIEWS ─────────────────────────────────────────────────────────
+function showView(name,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='admin') loadAdmin();
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+// ── LOCALES DROPDOWN ──────────────────────────────────────────────
+async function loadLocalesDropdown(){
+  try{
+    const r=await fetch(`${API}/v1/locales`);
+    const d=await r.json();
+    allLocales=(d.locales||[]).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+    const opts='<option value="">Todos los locales</option>'+allLocales.map(l=>`<option value="${l.id_local}">${l.nombre||l.id_local}</option>`).join('');
+    document.getElementById('f-local').innerHTML=opts;
+    document.getElementById('bar-local-dd').innerHTML='<option value="">— Seleccionar —</option>'+allLocales.map(l=>`<option value="${l.id_local}">${l.nombre||l.id_local}</option>`).join('');
+    document.getElementById('mu-local').innerHTML='<option value="">— Sin local —</option>'+allLocales.map(l=>`<option value="${l.id_local}">${l.nombre||l.id_local}</option>`).join('');
+  }catch(e){console.log('Error locales:',e);}
+}
+
+// ── BUILD QUERY ───────────────────────────────────────────────────
+function buildQueryString(){
+  const p=getDateParams();
+  const params=new URLSearchParams();
+  if(p.mes) params.set('mes',p.mes);
+  if(p.desde) params.set('fecha',p.desde+' 00:00:00');
+  if(p.hasta) params.set('hasta',p.hasta);
+  const loc=document.getElementById('f-local').value;
+  const fuente=document.getElementById('f-fuente').value;
+  const buscar=document.getElementById('f-buscar').value;
+  if(loc) params.set('id_local',loc);
+  if(fuente) params.set('fuente',fuente);
+  if(buscar) params.set('buscar',buscar);
+  return params.toString();
+}
+
+async function applyFilters(){
+  const active=document.querySelector('.tab.active');
+  const view=active?active.textContent.trim():'Reportes';
+  if(view.includes('Reporte')||view==='Reportes') await loadReportes();
+  else if(view==='Establecimiento') await loadBar();
+  else if(view==='Artistas') await loadArtista();
+}
+function clearFilters(){
+  document.getElementById('f-tipo-fecha').value='mes';toggleFecha();
+  document.getElementById('f-mes').value=getMeses()[0].val;
+  if(SESSION?.rol!=='establecimiento') document.getElementById('f-local').value='';
+  document.getElementById('f-fuente').value='';
+  document.getElementById('f-buscar').value='';
+  applyFilters();
+}
+
+// ── REPORTES ─────────────────────────────────────────────────────
+async function loadReportes(){
+  document.getElementById('r-tbody').innerHTML='<tr><td colspan="7" class="empty">Cargando...</td></tr>';
+  try{
+    const qs=buildQueryString();
+    const r=await fetch(`${API}/admin/stats?${qs}`,{headers:authHeader()});
+    repData=await r.json();
+    const tp=repData.reduce((s,r)=>s+(r.total_plays||0),0);
+    const tc=repData.reduce((s,r)=>s+(r.plays_cpm||0),0);
+    document.getElementById('r-total').textContent=fmt(tp);
+    document.getElementById('r-loc').textContent=repData.length;
+    document.getElementById('r-earn').textContent=fmtCOP(earnCPM(tc));
+    document.getElementById('r-earn-estab').textContent=fmtCOP(earnEstab(tc));
+    document.getElementById('r-earn-sub').textContent=`× $${fmt(CFG.precio)}/play`;
+    document.getElementById('r-estab-sub').textContent=`${CFG.pct}% del precio`;
+    renderRepTable();
+    await loadCharts(qs);
+    setStatus(`${repData.length} locales`);
+  }catch(e){document.getElementById('r-tbody').innerHTML=`<tr><td colspan="7" class="empty">Error: ${e.message}</td></tr>`;}
+}
+
+function setRepFilter(f,btn){repFilterActive=f;document.querySelectorAll('#view-reportes .pill').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderRepTable();}
+function filterRepTable(q){repSearch=q;renderRepTable();}
+function renderRepTable(){
+  const pg=_pags.rep;
+  let rows=repData.filter(r=>{
+    if(repFilterActive==='active'&&!(r.total_plays>0))return false;
+    const rid=r.id_local||r.id||'';
+    const rnom=r.nombre||'';
+    if(repSearch){const q=repSearch.toLowerCase();return rnom.toLowerCase().includes(q)||rid.toLowerCase().includes(q)||(r.ciudad||'').toLowerCase().includes(q);}
+    return true;
+  });
+  if(repSort.col>=0){
+    const rid=r=>r.id_local||r.id||'';
+    const keys=[r=>r.nombre||rid(r),rid,r=>r.ciudad,r=>r.total_plays,r=>r.plays_cpm,r=>earnCPM(r.plays_cpm),r=>earnEstab(r.plays_cpm)];
+    rows.sort((a,b)=>{const av=keys[repSort.col](a)||0,bv=keys[repSort.col](b)||0;return repSort.asc?(av>bv?1:-1):(av<bv?1:-1);});
+  }
+  document.getElementById('r-loc-count').textContent=rows.length;
+  if(!rows.length){document.getElementById('r-tbody').innerHTML='<tr><td colspan="8" class="empty">Sin datos</td></tr>';renderPag('rep',rows.length);return;}
+  const slice=pg.size>0?rows.slice(pg.page*pg.size,(pg.page+1)*pg.size):rows;
+  document.getElementById('r-tbody').innerHTML=slice.map(r=>{
+    const cpm=r.plays_cpm||0;
+    const rid=r.id_local||r.id||'';
+    const nombre=allLocales.find(l=>l.id_local===rid)?.nombre||r.nombre||rid;
+    return`<tr onclick="goBar('${rid}')">
+      <td class="td-p">${nombre}</td><td class="td-f mono">${rid}</td><td>${r.ciudad||'—'}</td>
+      <td class="mono">${fmt(r.total_plays||0)}</td><td class="mono td-a">${fmt(cpm)}</td>
+      <td class="mono td-ok">${fmtCOP(earnCPM(cpm))}</td><td class="mono td-warn">${fmtCOP(earnEstab(cpm))}</td>
+      <td class="td-f">${fuentesDots(r.fuentes||[])}</td>
+    </tr>`;
+  }).join('');
+  renderPag('rep',rows.length);
+}
+function sortRep(col){repSort.col===col?repSort.asc=!repSort.asc:(repSort.col=col,repSort.asc=true);document.querySelectorAll('#view-reportes thead th').forEach((th,i)=>{th.classList.remove('asc','desc');if(i===col)th.classList.add(repSort.asc?'asc':'desc');});renderRepTable();}
+
+// ── CHARTS ────────────────────────────────────────────────────────
+async function loadCharts(qs){
+  try{
+    const r=await fetch(`${API}/v1/plays/list?limite=2000&${qs}`,{headers:authHeader()});
+    const d=await r.json();
+    const plays=d.plays||[];
+    drawDona(plays);drawBars(plays);buildArtistasDropdown(plays);
+  }catch(e){console.log('Chart error:',e);}
+}
+function drawDona(plays){
+  const canvas=document.getElementById('chart-dona'),ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
+  const counts={};plays.forEach(p=>{const f=p.fuente||'Otra';counts[f]=(counts[f]||0)+1;});
+  const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const total=entries.reduce((s,[,v])=>s+v,0);
+  if(!total){ctx.fillStyle='#3A4255';ctx.font='12px IBM Plex Sans';ctx.textAlign='center';ctx.fillText('Sin datos',W/2,H/2);return;}
+  const colors=['#1A7FD4','#2ECC8A','#F0A030','#E05555','#8B5CF6'];
+  const cx=W/2,cy=H/2-5,R=72,r=40;let angle=-Math.PI/2;
+  entries.forEach(([f,v],i)=>{const slice=(v/total)*Math.PI*2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,angle,angle+slice);ctx.closePath();ctx.fillStyle=colors[i%colors.length];ctx.fill();angle+=slice;});
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle='#141920';ctx.fill();
+  ctx.textAlign='center';ctx.fillStyle='#E8EAF0';ctx.font='bold 16px Syne';ctx.fillText(fmt(total),cx,cy+4);
+  ctx.font='10px IBM Plex Sans';ctx.fillStyle='#7A8499';ctx.fillText('plays',cx,cy+16);
+  document.getElementById('dona-legend').innerHTML=entries.map(([f,v],i)=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px"><div style="width:7px;height:7px;border-radius:2px;background:${colors[i%colors.length]};flex-shrink:0"></div><span style="color:#7A8499;flex:1">${f}</span><span style="color:#E8EAF0;font-family:'IBM Plex Mono',monospace">${fmt(v)}</span></div>`).join('');
+}
+function drawBars(plays){
+  const canvas=document.getElementById('chart-bars'),ctx=canvas.getContext('2d');
+  canvas.width=canvas.parentElement.clientWidth-40;const W=canvas.width,H=canvas.height=220;ctx.clearRect(0,0,W,H);
+  const counts={};plays.forEach(p=>{const k=(p.contenido||'').slice(0,40);counts[k]=(counts[k]||0)+1;});
+  const top10=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if(!top10.length){ctx.fillStyle='#3A4255';ctx.font='12px IBM Plex Sans';ctx.textAlign='center';ctx.fillText('Sin datos',W/2,H/2);return;}
+  const maxV=top10[0][1],barH=16,gap=6,labelW=175,barW=W-labelW-55;
+  top10.forEach(([name,v],i)=>{
+    const y=i*(barH+gap),w=Math.max(4,(v/maxV)*barW);
+    ctx.fillStyle='#1A7FD422';ctx.beginPath();ctx.roundRect(labelW,y,barW,barH,3);ctx.fill();
+    ctx.fillStyle='#1A7FD4';ctx.beginPath();ctx.roundRect(labelW,y,w,barH,3);ctx.fill();
+    ctx.fillStyle='#7A8499';ctx.font='11px IBM Plex Sans';ctx.textAlign='right';
+    ctx.fillText(name.length>26?name.slice(0,26)+'…':name,labelW-8,y+barH-4);
+    ctx.fillStyle='#E8EAF0';ctx.font='bold 11px IBM Plex Mono';ctx.textAlign='left';ctx.fillText(fmt(v),labelW+w+6,y+barH-4);
+  });
+}
+
+// ── BAR VIEW ─────────────────────────────────────────────────────
+function goBar(id){
+  document.getElementById('f-local').value=id;
+  document.getElementById('bar-local-dd').value=id;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-bar').classList.add('active');
+  document.querySelectorAll('.tab')[1].classList.add('active');
+  loadBar();
+}
+function barDdChanged(){const id=document.getElementById('bar-local-dd').value;if(id)document.getElementById('f-local').value=id;}
+async function loadBar(){
+  const ddVal=document.getElementById('bar-local-dd').value;
+  if(ddVal)document.getElementById('f-local').value=ddVal;
+  const localId=document.getElementById('f-local').value||ddVal;
+  if(!localId){document.getElementById('b-tbody').innerHTML='<tr><td colspan="9" class="empty">Selecciona un establecimiento</td></tr>';return;}
+  document.getElementById('b-tbody').innerHTML='<tr><td colspan="9" class="empty">Cargando...</td></tr>';
+  try{
+    const qs=buildQueryString();
+    const r=await fetch(`${API}/dashboard/bar/${localId}?${qs}`,{headers:authHeader()});
+    const d=await r.json();
+    const res=d.resumen||{},cpm=res.plays_cpm||0;
+    document.getElementById('b-total').textContent=fmt(res.total_plays||0);
+    document.getElementById('b-cpm').textContent=fmt(cpm);
+    document.getElementById('b-earn').textContent=fmtCOP(earnCPM(cpm));
+    document.getElementById('b-earn-e').textContent=fmtCOP(earnEstab(cpm));
+    barData=d.canciones||[];renderBarTable();
+
+    // Dibujar gráficas con los datos de canciones
+    drawDonaBar(d.canciones||[], d.resumen||{});
+    drawBarsBar(d.canciones||[]);
+
+    setStatus(`${barData.length} canciones`);
+  }catch(e){document.getElementById('b-tbody').innerHTML=`<tr><td colspan="9" class="empty">Error: ${e.message}</td></tr>`;}
+}
+function setBarFilter(f,btn){barFilter=f;document.querySelectorAll('#view-bar .pill').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderBarTable();}
+function filterBarTable(q){barSearch=q;renderBarTable();}
+function renderBarTable(){
+  const pg=_pags.bar;
+  let rows=barData.filter(c=>{
+    if(barFilter==='paid'&&!(c.completas>0))return false;
+    if(barFilter==='unpaid'&&c.completas>0)return false;
+    if(barSearch)return(c.titulo||'').toLowerCase().includes(barSearch.toLowerCase())||(c.artista||'').toLowerCase().includes(barSearch.toLowerCase());
+    return true;
+  });
+  if(barSort.col>=0){
+    const keys=[c=>c.artista,c=>c.titulo,c=>c.isrc,c=>c.veces,c=>c.pct_promedio||0,c=>c.completas,c=>earnCPM(c.completas),c=>earnEstab(c.completas)];
+    rows.sort((a,b)=>{const av=keys[barSort.col](a)||0,bv=keys[barSort.col](b)||0;return barSort.asc?(av>bv?1:-1):(av<bv?1:-1);});
+  }
+  document.getElementById('b-count').textContent=rows.length;
+  if(!rows.length){document.getElementById('b-tbody').innerHTML='<tr><td colspan="9" class="empty">Sin canciones</td></tr>';renderPag('bar',0);return;}
+  const slice=pg.size>0?rows.slice(pg.page*pg.size,(pg.page+1)*pg.size):rows;
+  document.getElementById('b-tbody').innerHTML=slice.map(c=>{
+    const pct=c.pct_promedio||0,pagada=c.completas>0;
+    return`<tr>
+      <td>${c.artista||'—'}</td><td class="td-p">${c.titulo||'—'}</td>
+      <td class="td-f mono">${c.isrc||'—'}</td>
+      <td>${fuenteDot(c.fuente||'—')}</td>
+      <td class="mono">${fmt(c.veces||0)}</td>
+      <td>${pctBar(pct)}</td>
+      <td>${pagada?'<span class="badge badge-ok">✓ Sí</span>':'<span class="badge badge-bad">✗ No</span>'}</td>
+      <td class="mono td-ok">${fmtCOP(earnCPM(c.completas||0))}</td>
+      <td class="mono td-warn">${fmtCOP(earnEstab(c.completas||0))}</td>
+    </tr>`;
+  }).join('');
+  renderPag('bar',rows.length);
+}
+function sortBar(col){barSort.col===col?barSort.asc=!barSort.asc:(barSort.col=col,barSort.asc=true);renderBarTable();}
+
+function drawDonaBar(canciones, resumen){
+  const canvas=document.getElementById('chart-dona-bar');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
+  // Agrupar por fuente desde las canciones
+  // Como las canciones no tienen fuente, usamos el resumen de fuentes del local
+  // En su lugar mostramos pagadas vs no pagadas
+  const pagadas = canciones.filter(c=>c.completas>0).length;
+  const noPagadas = canciones.length - pagadas;
+  const total = canciones.length;
+  if(!total){ctx.fillStyle='#3A4255';ctx.font='12px IBM Plex Sans';ctx.textAlign='center';ctx.fillText('Sin datos',W/2,H/2);return;}
+  const entries=[['Se pagan',pagadas],['No pagadas',noPagadas]].filter(([,v])=>v>0);
+  const colors=['#2ECC8A','#E05555'];
+  const cx=W/2,cy=H/2-5,R=72,r=40;let angle=-Math.PI/2;
+  entries.forEach(([f,v],i)=>{const slice=(v/total)*Math.PI*2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,angle,angle+slice);ctx.closePath();ctx.fillStyle=colors[i];ctx.fill();angle+=slice;});
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle='#141920';ctx.fill();
+  ctx.textAlign='center';ctx.fillStyle='#E8EAF0';ctx.font='bold 16px Syne';ctx.fillText(fmt(total),cx,cy+4);
+  ctx.font='10px IBM Plex Sans';ctx.fillStyle='#7A8499';ctx.fillText('canciones',cx,cy+16);
+  document.getElementById('dona-legend-bar').innerHTML=entries.map(([f,v],i)=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px"><div style="width:7px;height:7px;border-radius:2px;background:${colors[i]};flex-shrink:0"></div><span style="color:#7A8499;flex:1">${f}</span><span style="color:#E8EAF0;font-family:'IBM Plex Mono',monospace">${fmt(v)}</span></div>`).join('');
+}
+
+function drawBarsBar(canciones){
+  const canvas=document.getElementById('chart-bars-bar');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.parentElement.clientWidth-40;
+  const W=canvas.width,H=canvas.height=220;ctx.clearRect(0,0,W,H);
+  const top10=canciones.slice(0,10);
+  if(!top10.length){ctx.fillStyle='#3A4255';ctx.font='12px IBM Plex Sans';ctx.textAlign='center';ctx.fillText('Sin datos',W/2,H/2);return;}
+  const maxV=Math.max(...top10.map(c=>c.veces||0));
+  const barH=16,gap=6,labelW=175,barW=W-labelW-55;
+  top10.forEach((c,i)=>{
+    const v=c.veces||0,y=i*(barH+gap),w=Math.max(4,(v/maxV)*barW);
+    const color=c.completas>0?'#2ECC8A':'#1A7FD4';
+    ctx.fillStyle=color+'33';ctx.beginPath();ctx.roundRect(labelW,y,barW,barH,3);ctx.fill();
+    ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(labelW,y,w,barH,3);ctx.fill();
+    const name=`${c.artista||'—'} - ${c.titulo||'—'}`;
+    ctx.fillStyle='#7A8499';ctx.font='11px IBM Plex Sans';ctx.textAlign='right';
+    ctx.fillText(name.length>26?name.slice(0,26)+'…':name,labelW-8,y+barH-4);
+    ctx.fillStyle='#E8EAF0';ctx.font='bold 11px IBM Plex Mono';ctx.textAlign='left';ctx.fillText(fmt(v),labelW+w+6,y+barH-4);
+  });
+}
+
+// ── ARTISTAS ─────────────────────────────────────────────────────
+function buildArtistasDropdown(plays){
+  const s=new Set();plays.forEach(p=>{const c=p.contenido||'';if(c.includes(' - '))s.add(c.split(' - ')[0].trim());});
+  allArtistas=[...s].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+  document.getElementById('ar-sel').innerHTML='<option value="">— Seleccionar artista —</option>'+allArtistas.map(a=>`<option value="${a}">${a}</option>`).join('');
+}
+function filterArtistas(){const q=document.getElementById('ar-nombre').value.toLowerCase();document.getElementById('ar-sel').innerHTML='<option value="">— Seleccionar artista —</option>'+allArtistas.filter(a=>a.toLowerCase().includes(q)).map(a=>`<option value="${a}">${a}</option>`).join('');}
+function arSelChanged(){document.getElementById('ar-nombre').value=document.getElementById('ar-sel').value;}
+async function loadArtista(){
+  const isrc=document.getElementById('ar-isrc').value.trim();
+  const artista=document.getElementById('ar-nombre').value.trim();
+  if(!isrc&&!artista){document.getElementById('ar-tbody').innerHTML='<tr><td colspan="6" class="empty">Ingresa un artista o ISRC</td></tr>';return;}
+  document.getElementById('ar-tbody').innerHTML='<tr><td colspan="6" class="empty">Cargando...</td></tr>';
+  try{
+    const qs=buildQueryString();
+    const url=isrc?`${API}/dashboard/artista/${isrc}?${qs}`:`${API}/dashboard/artista/buscar?artista=${encodeURIComponent(artista)}&${qs}`;
+    const r=await fetch(url,{headers:authHeader()});
+    const d=await r.json();
+    document.getElementById('ar-total').textContent=fmt(d.totales?.total_plays||0);
+    document.getElementById('ar-comp').textContent=fmt(d.totales?.total_completas||0);
+    document.getElementById('ar-loc').textContent=fmt(d.totales?.total_locales||0);
+    const locales=d.locales||[];
+    document.getElementById('ar-count').textContent=locales.length;
+    if(!locales.length){document.getElementById('ar-tbody').innerHTML='<tr><td colspan="6" class="empty">Sin reproducciones</td></tr>';return;}
+    document.getElementById('ar-tbody').innerHTML=locales.map(l=>{
+      const pct=l.veces?((l.completas||0)/l.veces*100):0;
+      return`<tr><td class="td-p">${l.local_nombre||l.local_id}</td><td class="td-f mono">${l.local_id||'—'}</td><td>${l.ciudad||'—'}</td><td class="mono">${fmt(l.veces||0)}</td><td class="mono td-ok">${fmt(l.completas||0)}</td><td>${pctBar(pct)}</td></tr>`;
+    }).join('');
+    setStatus(`${locales.length} local(es)`);
+  }catch(e){document.getElementById('ar-tbody').innerHTML=`<tr><td colspan="6" class="empty">Error: ${e.message}</td></tr>`;}
+}
+
+// ── ADMIN ─────────────────────────────────────────────────────────
+async function loadAdmin(){
+  await Promise.all([loadAdminLocales(), loadAdminUsuarios(), loadAdminMensajes()]);
+}
+
+let _adminLocalesData=[];
+async function loadAdminLocales(){
+  try{
+    const r=await fetch(`${API}/admin/locales`,{headers:authHeader()});
+    const d=await r.json();
+    _adminLocalesData=d.locales||d||[];
+    _renderAdminLocales();
+  }catch(e){document.getElementById('admin-locales-tbody').innerHTML='<tr><td colspan="6" class="empty">Error cargando</td></tr>';}
+}
+function _renderAdminLocales(){
+  const pg=_pags.admin_loc;
+  const all=_adminLocalesData;
+  const q=(document.getElementById('flt-loc')?.value||'').toLowerCase();
+  const rows=q?all.filter(l=>(l.nombre||'').toLowerCase().includes(q)||(l.id_local||'').toLowerCase().includes(q)||(l.ciudad||'').toLowerCase().includes(q)):all;
+  const slice=pg.size>0?rows.slice(pg.page*pg.size,(pg.page+1)*pg.size):rows;
+  document.getElementById('admin-locales-tbody').innerHTML=slice.map(l=>`
+    <tr>
+      <td class="td-p">${l.nombre||'—'}</td>
+      <td class="td-f mono">${l.id_local}</td>
+      <td>${l.ciudad||'—'}</td>
+      <td>${l.tipo||'—'}</td>
+      <td>${l.activo?'<span class="badge badge-ok">Activo</span>':'<span class="badge badge-bad">Inactivo</span>'}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn-sm" onclick='editarLocal(${JSON.stringify(l).replace(/'/g,"&#39;")})'>Editar</button>
+        <button class="btn-sm danger" onclick="eliminarLocal('${l.id_local}','${(l.nombre||'').replace(/'/g,'')}')">${l.activo?'Desactivar':'Activar'}</button>
+      </td>
+    </tr>`).join('')||'<tr><td colspan="6" class="empty">Sin locales</td></tr>';
+  renderPag('admin_loc',rows.length);
+}
+
+let _adminUsersData=[];
+async function loadAdminUsuarios(){
+  try{
+    const r=await fetch(`${API}/admin/usuarios`,{headers:authHeader()});
+    const d=await r.json();
+    _adminUsersData=d.usuarios||d||[];
+    _renderAdminUsuarios();
+  }catch(e){document.getElementById('admin-usuarios-tbody').innerHTML='<tr><td colspan="6" class="empty">Error cargando</td></tr>';}
+}
+function _renderAdminUsuarios(){
+  const pg=_pags.admin_usr;
+  const all=_adminUsersData;
+  const q=(document.getElementById('flt-usr')?.value||'').toLowerCase();
+  const rows=q?all.filter(u=>(u.nombre||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)):all;
+  const slice=pg.size>0?rows.slice(pg.page*pg.size,(pg.page+1)*pg.size):rows;
+  document.getElementById('admin-usuarios-tbody').innerHTML=slice.map(u=>`
+    <tr>
+      <td class="td-f">${u.nombre||'—'}</td>
+      <td class="td-f">${u.email}</td>
+      <td><span class="badge ${u.rol==='superadmin'?'badge-warn':u.rol==='cpm_interno'?'badge-ok':'badge-bad'}">${u.rol}</span></td>
+      <td class="td-f">${allLocales.find(l=>l.id_local===u.id_local)?.nombre||u.id_local||'—'}</td>
+      <td>${u.activo?'<span class="badge badge-ok">Activo</span>':'<span class="badge badge-bad">Inactivo</span>'}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn-sm" onclick='editarUsuario(${JSON.stringify(u)})'>Editar</button>
+        <button class="btn-sm danger" onclick="eliminarUsuario(${u.id},'${(u.email||'').replace(/'/g,'')}')">Eliminar</button>
+      </td>
+    </tr>`).join('')||'<tr><td colspan="6" class="empty">Sin usuarios</td></tr>';
+  renderPag('admin_usr',rows.length);
+}
+
+function openModalLocal(){
+  document.getElementById('modal-local-title').textContent='Nuevo establecimiento';
+  ['ml-id','ml-nombre','ml-ciudad','ml-zona','ml-email','ml-telefono','ml-direccion','ml-contacto'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ml-pais').value='Colombia';
+  document.getElementById('ml-tipo').value='Bar / Pub';
+  document.getElementById('ml-usuarios-section').style.display='none';
+  document.getElementById('modal-local').classList.add('open');
+}
+
+async function editarLocal(l){
+  document.getElementById('modal-local-title').textContent='Editar establecimiento';
+  document.getElementById('ml-id').value=l.id_local||'';
+  document.getElementById('ml-nombre').value=l.nombre||'';
+  document.getElementById('ml-tipo').value=l.tipo||'Bar / Pub';
+  document.getElementById('ml-ciudad').value=l.ciudad||'';
+  document.getElementById('ml-zona').value=l.zona||'';
+  document.getElementById('ml-pais').value=l.pais||'Colombia';
+  document.getElementById('ml-direccion').value=l.direccion||'';
+  document.getElementById('ml-contacto').value=l.contacto||'';
+  document.getElementById('ml-email').value=l.email||'';
+  document.getElementById('ml-telefono').value=l.telefono||'';
+  // Cargar usuarios vinculados
+  try{
+    const r=await fetch(`${API}/admin/usuarios`,{headers:authHeader()});
+    const d=await r.json();
+    const usuarios=(d.usuarios||d||[]).filter(u=>u.id_local===l.id_local);
+    const sec=document.getElementById('ml-usuarios-section');
+    const lst=document.getElementById('ml-usuarios-list');
+    if(usuarios.length){
+      sec.style.display='';
+      lst.innerHTML=usuarios.map(u=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;background:var(--panel);border-radius:6px">
+        <span style="flex:1;color:var(--fg)">${u.nombre||u.email}</span>
+        <span class="td-f">${u.email}</span>
+        <span class="badge ${u.activo?'badge-ok':'badge-bad'}">${u.activo?'Activo':'Inactivo'}</span>
+      </div>`).join('');
+    }else{
+      sec.style.display='';
+      lst.innerHTML='<div style="color:var(--faint);font-size:12px">Sin usuarios vinculados</div>';
+    }
+  }catch(e){document.getElementById('ml-usuarios-section').style.display='none';}
+  document.getElementById('modal-local').classList.add('open');
+}
+
+async function guardarLocal(){
+  const id=document.getElementById('ml-id').value;
+  const body={
+    nombre:document.getElementById('ml-nombre').value.trim(),
+    tipo:document.getElementById('ml-tipo').value,
+    ciudad:document.getElementById('ml-ciudad').value.trim(),
+    zona:document.getElementById('ml-zona').value.trim(),
+    pais:document.getElementById('ml-pais').value.trim(),
+    direccion:document.getElementById('ml-direccion').value.trim(),
+    contacto:document.getElementById('ml-contacto').value.trim(),
+    email:document.getElementById('ml-email').value.trim(),
+    telefono:document.getElementById('ml-telefono').value.trim(),
+  };
+  if(!body.nombre){alert('El nombre es requerido');return;}
+  try{
+    let r;
+    if(id){
+      r=await fetch(`${API}/admin/locales/${id}`,{method:'PUT',headers:authHeader(),body:JSON.stringify(body)});
+    }else{
+      r=await fetch(`${API}/admin/locales`,{method:'POST',headers:authHeader(),body:JSON.stringify(body)});
+    }
+    const d=await r.json();
+    if(!r.ok){alert(d.error||'Error guardando');return;}
+    closeModal('modal-local');
+    await loadLocalesDropdown();
+    await loadAdminLocales();
+    setStatus(id?'Local actualizado':'Local creado');
+  }catch(e){alert('Error de conexión');}
+}
+
+function openModalUsuario(){
+  document.getElementById('modal-usuario-title').textContent='Nuevo usuario';
+  document.getElementById('mu-id').value='';
+  document.getElementById('mu-nombre').value='';
+  document.getElementById('mu-email').value='';
+  document.getElementById('mu-email').disabled=false;
+  document.getElementById('mu-pwd').value='';
+  document.getElementById('mu-pwd').placeholder='Mínimo 6 caracteres';
+  document.getElementById('mu-pwd-hint').textContent='El usuario deberá cambiarla en el primer acceso';
+  document.getElementById('mu-pwd-field').style.display='';
+  document.getElementById('mu-rol').value='establecimiento';
+  document.getElementById('mu-local').value='';
+  document.getElementById('mu-submit-btn').textContent='Crear usuario';
+  toggleLocalField();
+  document.getElementById('modal-usuario').classList.add('open');
+}
+
+function editarUsuario(u){
+  document.getElementById('modal-usuario-title').textContent='Editar usuario';
+  document.getElementById('mu-id').value=u.id;
+  document.getElementById('mu-nombre').value=u.nombre||'';
+  document.getElementById('mu-email').value=u.email||'';
+  document.getElementById('mu-email').disabled=true;
+  document.getElementById('mu-pwd').value='';
+  document.getElementById('mu-pwd').placeholder='Dejar en blanco para no cambiar';
+  document.getElementById('mu-pwd-hint').textContent='Solo completa si querés cambiar la contraseña';
+  document.getElementById('mu-pwd-field').style.display='';
+  document.getElementById('mu-rol').value=u.rol||'establecimiento';
+  document.getElementById('mu-local').value=u.id_local||'';
+  document.getElementById('mu-submit-btn').textContent='Guardar cambios';
+  toggleLocalField();
+  document.getElementById('modal-usuario').classList.add('open');
+}
+
+function toggleLocalField(){
+  const rol=document.getElementById('mu-rol').value;
+  document.getElementById('mu-local-field').style.display=rol==='establecimiento'?'':'none';
+}
+
+async function guardarUsuario(){
+  const uid=document.getElementById('mu-id').value;
+  const pwd=document.getElementById('mu-pwd').value;
+  const body={
+    nombre:document.getElementById('mu-nombre').value.trim(),
+    rol:document.getElementById('mu-rol').value,
+    id_local:document.getElementById('mu-local').value,
+  };
+  if(uid){
+    // Editar: email no cambia, password opcional
+    if(!body.nombre){alert('El nombre es requerido');return;}
+    if(pwd) body.password=pwd;
+    try{
+      const r=await fetch(`${API}/admin/usuarios/${uid}`,{method:'PUT',headers:authHeader(),body:JSON.stringify(body)});
+      const d=await r.json();
+      if(!r.ok){alert(d.error||'Error actualizando usuario');return;}
+      closeModal('modal-usuario');
+      await loadAdminUsuarios();
+      setStatus('Usuario actualizado');
+    }catch(e){alert('Error de conexión');}
+  }else{
+    // Crear: email y password obligatorios
+    body.email=document.getElementById('mu-email').value.trim();
+    body.password=pwd;
+    if(!body.nombre||!body.email||!body.password){alert('Completa todos los campos');return;}
+    try{
+      const r=await fetch(`${API}/admin/usuarios`,{method:'POST',headers:authHeader(),body:JSON.stringify(body)});
+      const d=await r.json();
+      if(!r.ok){alert(d.error||'Error creando usuario');return;}
+      closeModal('modal-usuario');
+      await loadAdminUsuarios();
+      setStatus('Usuario creado');
+    }catch(e){alert('Error de conexión');}
+  }
+}
+
+async function eliminarUsuario(id, nombre){
+  if(!confirm(`¿Eliminar al usuario "${nombre}"? Esta acción no se puede deshacer.`))return;
+  try{
+    const r=await fetch(`${API}/admin/usuarios/${id}`,{
+      method:'DELETE',
+      headers:{'X-Session-Token':SESSION.token,'Content-Type':'application/json'}
+    });
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){alert(d.error||'Error eliminando');return;}
+    await loadAdminUsuarios();
+    setStatus('Usuario eliminado');
+  }catch(e){alert('Error de conexión: '+e.message);}
+}
+
+async function eliminarLocal(id_local, nombre){
+  const accion = confirm(`¿Desactivar el establecimiento "${nombre}"?\nPodrá reactivarlo después.`);
+  if(!accion)return;
+  try{
+    const r=await fetch(`${API}/admin/locales/${id_local}`,{
+      method:'DELETE',
+      headers:{'X-Session-Token':SESSION.token,'Content-Type':'application/json'}
+    });
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){alert(d.error||'Error');return;}
+    await loadLocalesDropdown();
+    await loadAdminLocales();
+    setStatus('Establecimiento desactivado');
+  }catch(e){alert('Error de conexión: '+e.message);}
+}
+
+// ── MENSAJES PUSH ─────────────────────────────────────────────────
+let _adminMsgsData=[];
+async function loadAdminMensajes(){
+  try{
+    const r=await fetch(`${API}/admin/mensajes`,{headers:authHeader()});
+    const d=await r.json();
+    _adminMsgsData=d.mensajes||d||[];
+    _renderAdminMensajes();
+  }catch(e){document.getElementById('admin-mensajes-tbody').innerHTML='<tr><td colspan="8" class="empty">Error cargando</td></tr>';}
+}
+function _renderAdminMensajes(){
+  const pg=_pags.admin_msg;
+  const all=_adminMsgsData;
+  const q=(document.getElementById('flt-msg')?.value||'').toLowerCase();
+  const rows=q?all.filter(m=>(m.titulo||'').toLowerCase().includes(q)):all;
+  const slice=pg.size>0?rows.slice(pg.page*pg.size,(pg.page+1)*pg.size):rows;
+  document.getElementById('admin-mensajes-tbody').innerHTML=slice.length
+    ? slice.map(m=>{
+        const dest=m.destinatario==='todos'?'<span class="badge badge-ok">Todos</span>'
+          :m.destinatario==='local'?`<span class="badge badge-warn">Local: ${m.id_local||'—'}</span>`
+          :`<span class="badge badge-bad">Tipo: ${m.tipo_comercio||'—'}</span>`;
+        const creado=m.creado_at?new Date(m.creado_at*1000).toLocaleDateString('es'):'—';
+        const vence=m.expira_at?new Date(m.expira_at*1000).toLocaleDateString('es'):'—';
+        const activo=m.activo?'<span class="badge badge-ok">Activo</span>':'<span class="badge badge-bad">Inactivo</span>';
+        const thumb=m.imagen_url?`<img src="${m.imagen_url}" style="width:38px;height:38px;object-fit:cover;border-radius:6px;vertical-align:middle;border:1px solid var(--border)" onerror="this.style.display='none'">`:'<span style="color:var(--faint);font-size:11px">—</span>';
+        return`<tr>
+          <td>${thumb}</td>
+          <td class="td-p">${m.titulo||'—'}</td>
+          <td>${dest}</td>
+          <td class="td-f">${creado}</td>
+          <td class="td-f">${vence}</td>
+          <td class="mono">${m.leidos||0}</td>
+          <td>${activo}</td>
+          <td><button class="btn-sm danger" onclick="eliminarMensaje(${m.id},'${(m.titulo||'').replace(/'/g,'')}')">Eliminar</button></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="8" class="empty">Sin mensajes enviados</td></tr>';
+  renderPag('admin_msg',rows.length);
+}
+
+function openModalMensaje(){
+  ['mm-titulo','mm-imagen','mm-btn-texto','mm-btn-url'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mm-cuerpo').value='';
+  document.getElementById('mm-expira').value='7';
+  document.getElementById('mm-dest').value='todos';
+  // Poblar dropdown de locales
+  document.getElementById('mm-local').innerHTML='<option value="">— Seleccionar —</option>'
+    +allLocales.map(l=>`<option value="${l.id_local}">${l.nombre||l.id_local}</option>`).join('');
+  toggleMsgDest();
+  document.getElementById('modal-mensaje').classList.add('open');
+}
+
+function toggleMsgDest(){
+  const v=document.getElementById('mm-dest').value;
+  document.getElementById('mm-local-field').style.display=v==='local'?'':'none';
+  document.getElementById('mm-tipo-field').style.display=v==='tipo_comercio'?'':'none';
+}
+
+async function crearMensaje(){
+  const titulo=document.getElementById('mm-titulo').value.trim();
+  const cuerpo=document.getElementById('mm-cuerpo').value.trim();
+  if(!titulo||!cuerpo){alert('Título y cuerpo son obligatorios');return;}
+  const dest=document.getElementById('mm-dest').value;
+  const dias=parseInt(document.getElementById('mm-expira').value)||7;
+  const expira_at=(Date.now()/1000)+(dias*86400);
+  const body={
+    titulo,cuerpo,
+    imagen_url:document.getElementById('mm-imagen').value.trim(),
+    boton_texto:document.getElementById('mm-btn-texto').value.trim(),
+    boton_url:document.getElementById('mm-btn-url').value.trim(),
+    destinatario:dest,
+    id_local:dest==='local'?document.getElementById('mm-local').value:'',
+    tipo_comercio:dest==='tipo_comercio'?document.getElementById('mm-tipo-comercio').value:'',
+    expira_at,
+  };
+  try{
+    const r=await fetch(`${API}/admin/mensajes`,{method:'POST',headers:authHeader(),body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!r.ok){alert(d.error||'Error creando mensaje');return;}
+    closeModal('modal-mensaje');
+    await loadAdminMensajes();
+    setStatus('Mensaje enviado');
+  }catch(e){alert('Error de conexión');}
+}
+
+async function eliminarMensaje(id,titulo){
+  if(!confirm(`¿Eliminar el mensaje "${titulo}"?`))return;
+  try{
+    const r=await fetch(`${API}/admin/mensajes/${id}`,{method:'DELETE',headers:authHeader()});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){alert(d.error||'Error');return;}
+    await loadAdminMensajes();
+    setStatus('Mensaje eliminado');
+  }catch(e){alert('Error de conexión: '+e.message);}
+}
+
+// ── STATUS ────────────────────────────────────────────────────────
+function setStatus(msg){document.getElementById('s-msg').textContent=msg;document.getElementById('s-time').textContent=new Date().toLocaleTimeString('es');}
+</script>
+</body>
+</html>
