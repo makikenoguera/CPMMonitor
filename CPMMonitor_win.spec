@@ -1,9 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec para Windows — genera CPMMonitor.exe (onefile, sin consola)
+# PyInstaller spec para Windows — onedir (Inno Setup crea el instalador final)
 
-from PyInstaller.utils.hooks import collect_all, collect_submodules
+from PyInstaller.utils.hooks import collect_all
 
-# Recoger TODO PyQt5 completo
 qt5_datas, qt5_binaries, qt5_hidden = collect_all('PyQt5')
 
 a = Analysis(
@@ -47,21 +46,21 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
-    exclude_binaries=False,
+    exclude_binaries=True,
     name='CPMMonitor',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
     console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
     icon='icon_tray.ico',
-    runtime_tmpdir=None,
+)
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=False,
+    name='CPMMonitor',
 )

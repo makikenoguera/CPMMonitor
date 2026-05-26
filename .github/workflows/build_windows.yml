@@ -3,8 +3,8 @@ name: Build Windows Installer
 on:
   push:
     tags:
-      - 'v*'        # Se activa con: git tag v4.3 && git push --tags
-  workflow_dispatch: # También se puede lanzar manualmente desde GitHub
+      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -25,30 +25,35 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements_win.txt
 
-      - name: Compilar con PyInstaller
+      - name: Compilar con PyInstaller (onedir)
         run: pyinstaller CPMMonitor_win.spec --clean --noconfirm
 
-      - name: Subir EXE como artefacto
+      - name: Instalar Inno Setup
+        run: choco install innosetup --no-progress -y
+        shell: powershell
+
+      - name: Crear instalador con Inno Setup
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+        shell: powershell
+
+      - name: Subir instalador como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: CPMMonitor-Windows
-          path: dist\CPMMonitor.exe
+          name: CPMMonitor-Installer
+          path: Output\CPMMonitor_Setup_v4.3.exe
           retention-days: 30
 
-      - name: Crear Release (solo cuando hay tag)
+      - name: Crear Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist\CPMMonitor.exe
+          files: Output\CPMMonitor_Setup_v4.3.exe
           name: CPM Monitor ${{ github.ref_name }}
           body: |
             ## CPM Monitor ${{ github.ref_name }} — Windows
 
             ### Instalación
-            1. Descarga `CPMMonitor.exe`
-            2. Ejecuta como administrador
+            1. Descarga `CPMMonitor_Setup_v4.3.exe`
+            2. Ejecuta el instalador (si SmartScreen lo bloquea → "Más información" → "Ejecutar de todas formas")
             3. Ingresa con las credenciales que recibiste por correo
-
-            ### Archivos
-            - `CPMMonitor.exe` — instalador completo
-            - `CPMMonitor_v4.3_win.zip` — versión portable (sin instalador)
