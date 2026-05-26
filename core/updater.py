@@ -29,9 +29,16 @@ def _ssl_context():
     import ssl
     ctx = ssl.create_default_context()
     try:
-        import certifi
-        ctx = ssl.create_default_context(cafile=certifi.where())
-    except ImportError:
+        import certifi, os
+        ca = certifi.where()
+        # En PyInstaller onefile, certifi puede estar en _MEIPASS
+        if not os.path.exists(ca):
+            import sys
+            if hasattr(sys, '_MEIPASS'):
+                ca = os.path.join(sys._MEIPASS, 'certifi', 'cacert.pem')
+        if os.path.exists(ca):
+            ctx = ssl.create_default_context(cafile=ca)
+    except (ImportError, Exception):
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
     return ctx

@@ -11,11 +11,21 @@ import urllib.error
 import json
 import ssl
 
-try:
-    import certifi
-    _SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
-except ImportError:
-    _SSL_CONTEXT = ssl.create_default_context()
+def _make_ssl_context():
+    ctx = ssl.create_default_context()
+    try:
+        import certifi, os, sys
+        ca = certifi.where()
+        if not os.path.exists(ca) and hasattr(sys, '_MEIPASS'):
+            ca = os.path.join(sys._MEIPASS, 'certifi', 'cacert.pem')
+        if os.path.exists(ca):
+            ctx = ssl.create_default_context(cafile=ca)
+    except Exception:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+_SSL_CONTEXT = _make_ssl_context()
 
 from core import database, config
 

@@ -10,13 +10,22 @@ import ssl
 
 log = logging.getLogger("mensajes")
 
-try:
-    import certifi
-    _SSL = ssl.create_default_context(cafile=certifi.where())
-except ImportError:
-    _SSL = ssl.create_default_context()
-_SSL.check_hostname = False
-_SSL.verify_mode = ssl.CERT_NONE
+def _make_ssl():
+    ctx = ssl.create_default_context()
+    try:
+        import certifi, os, sys
+        ca = certifi.where()
+        if not os.path.exists(ca) and hasattr(sys, '_MEIPASS'):
+            ca = os.path.join(sys._MEIPASS, 'certifi', 'cacert.pem')
+        if os.path.exists(ca):
+            ctx = ssl.create_default_context(cafile=ca)
+    except Exception:
+        pass
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+_SSL = _make_ssl()
 
 
 def _get_base_and_token():

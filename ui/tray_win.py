@@ -88,7 +88,8 @@ class CPMTray:
         self.updater.start()
 
     def _construir_menu(self):
-        menu = QMenu()
+        self._menu = QMenu()  # referencia fuerte para evitar garbage collection
+        menu = self._menu
 
         self._act_estado = QAction("● Iniciando...")
         self._act_estado.setEnabled(False)
