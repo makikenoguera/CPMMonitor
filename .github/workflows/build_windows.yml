@@ -6,6 +6,9 @@ on:
       - 'v*'        # Se activa con: git tag v4.3 && git push --tags
   workflow_dispatch: # También se puede lanzar manualmente desde GitHub
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
