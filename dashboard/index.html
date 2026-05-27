@@ -714,6 +714,7 @@ const _pags={
   bar:{page:0,size:25},
   admin_loc:{page:0,size:25},
   admin_usr:{page:0,size:25},
+  admin_cat:{page:0,size:25},
   admin_msg:{page:0,size:25},
 };
 
@@ -1207,7 +1208,7 @@ async function loadArtista(){
 
 // ── ADMIN ─────────────────────────────────────────────────────────
 async function loadAdmin(){
-  await Promise.all([loadAdminLocales(), loadAdminUsuarios(), loadAdminMensajes()]);
+  await Promise.all([loadAdminLocales(), loadAdminUsuarios(), loadAdminMensajes(), loadAdminCatalogo()]);
 }
 
 let _adminLocalesData=[];
