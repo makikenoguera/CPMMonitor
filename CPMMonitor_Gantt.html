@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPM Monitor — Plan de Trabajo</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080B0F; --panel:#0F1318; --card:#141920; --border:#1C2230;
+  --fg:#E8EAF0; --dim:#7A8499; --faint:#253040;
+  --accent:#1A7FD4; --ok:#2ECC8A; --warn:#F0A030; --bad:#E05555;
+  --done:#2ECC8A; --progress:#1A7FD4; --pending:#3A4255; --milestone:#F0A030;
+  --phase1:#1A7FD4; --phase2:#7B61FF; --phase3:#2ECC8A; --phase4:#F0A030; --phase5:#E05555;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;font-size:13px;min-height:100vh}
+
+/* HEADER */
+.header{background:var(--panel);border-bottom:1px solid var(--border);padding:20px 32px;display:flex;align-items:center;gap:16px}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,#1A7FD4,#0E5FA8);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(26,127,212,.4)}
+.logo-text{display:flex;flex-direction:column;gap:2px}
+.logo-cpm{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--fg)}
+.logo-monitor{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.25em;color:var(--accent);text-transform:uppercase}
+.header-title{margin-left:auto;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--dim)}
+.milestone-badge{background:rgba(240,160,48,.15);border:1px solid rgba(240,160,48,.4);color:var(--warn);border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+
+/* LAYOUT */
+.container{padding:24px 32px;max-width:1400px;margin:0 auto}
+
+/* STATS ROW */
+.stats{display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 20px;flex:1;min-width:150px}
+.stat-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;line-height:1}
+.stat-label{font-size:11px;color:var(--dim);margin-top:4px;letter-spacing:.05em}
+.c-ok{color:var(--ok)} .c-accent{color:var(--accent)} .c-warn{color:var(--warn)} .c-bad{color:var(--bad)}
+
+/* GANTT */
+.gantt-wrap{background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.gantt-header{display:flex;border-bottom:2px solid var(--border)}
+.gh-label{width:280px;flex-shrink:0;padding:12px 16px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);border-right:1px solid var(--border)}
+.gh-timeline{flex:1;display:flex;overflow:hidden}
+.gh-month{flex:1;padding:10px 0;text-align:center;font-size:11px;font-weight:600;color:var(--dim);border-right:1px solid var(--border);font-family:'IBM Plex Mono',monospace}
+.gh-month:last-child{border-right:none}
+.gh-month.current{color:var(--warn);background:rgba(240,160,48,.05)}
+
+/* PHASE ROWS */
+.phase-header{background:var(--card);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px}
+.phase-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.phase-name{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:.05em}
+.phase-tag{margin-left:auto;font-size:10px;font-family:'IBM Plex Mono',monospace;padding:2px 10px;border-radius:10px}
+.tag-done{background:rgba(46,204,138,.15);color:var(--ok);border:1px solid rgba(46,204,138,.3)}
+.tag-next{background:rgba(26,127,212,.15);color:var(--accent);border:1px solid rgba(26,127,212,.3)}
+.tag-future{background:rgba(58,66,85,.3);color:var(--dim);border:1px solid var(--faint)}
+
+/* TASK ROW */
+.task-row{display:flex;border-bottom:1px solid rgba(28,34,48,.6);align-items:stretch;min-height:44px}
+.task-row:last-child{border-bottom:none}
+.task-row:hover{background:rgba(255,255,255,.015)}
+.task-label{width:280px;flex-shrink:0;padding:10px 16px;display:flex;align-items:center;gap:10px;border-right:1px solid var(--border)}
+.task-icon{font-size:14px;flex-shrink:0}
+.task-num{width:22px;height:22px;background:var(--faint);border:1px solid var(--border);border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:var(--dim);flex-shrink:0}
+.task-row:hover .task-num{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.task-name{font-size:12px;line-height:1.3;color:var(--fg)}
+.task-name small{display:block;color:var(--dim);font-size:10px;margin-top:1px}
+.task-status{margin-left:auto;flex-shrink:0}
+.dot-done{width:8px;height:8px;background:var(--ok);border-radius:50%}
+.dot-progress{width:8px;height:8px;background:var(--accent);border-radius:50%;animation:pulse 1.5s infinite}
+.dot-pending{width:8px;height:8px;background:var(--faint);border-radius:50%}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* GANTT TIMELINE AREA */
+.task-timeline{flex:1;position:relative;display:flex;align-items:center;padding:0}
+
+/* MONTH COLUMNS */
+.month-grid{position:absolute;inset:0;display:flex;pointer-events:none}
+.month-col{flex:1;border-right:1px solid rgba(28,34,48,.5)}
+.month-col:last-child{border-right:none}
+.month-col.current-month{background:rgba(240,160,48,.03)}
+
+/* BARS */
+.bar{position:absolute;height:22px;border-radius:6px;display:flex;align-items:center;padding:0 8px;font-size:10px;font-weight:600;font-family:'IBM Plex Mono',monospace;white-space:nowrap;overflow:hidden;cursor:default;transition:filter .15s,transform .15s}
+.bar:hover{filter:brightness(1.2);transform:scaleY(1.08);z-index:10}
+.bar-done{background:rgba(46,204,138,.25);border:1px solid rgba(46,204,138,.5);color:var(--ok)}
+.bar-progress{background:rgba(26,127,212,.3);border:1px solid rgba(26,127,212,.6);color:#7EC8FF}
+.bar-pending{background:rgba(58,66,85,.4);border:1px solid var(--faint);color:var(--dim)}
+.bar-warn{background:rgba(240,160,48,.2);border:1px solid rgba(240,160,48,.5);color:var(--warn)}
+
+/* TODAY LINE */
+.today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--warn);z-index:20;pointer-events:none}
+.today-line::before{content:'HOY';position:absolute;top:-22px;left:50%;transform:translateX(-50%);background:var(--warn);color:#000;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;font-family:'IBM Plex Mono',monospace;letter-spacing:.08em}
+
+/* MILESTONE MARKER */
+.milestone-marker{position:absolute;width:16px;height:16px;background:var(--warn);transform:rotate(45deg);z-index:15;cursor:default}
+.milestone-marker:hover .milestone-tip{display:block}
+.milestone-tip{display:none;position:absolute;bottom:24px;left:50%;transform:translateX(-50%) rotate(-45deg);background:var(--panel);border:1px solid var(--warn);border-radius:8px;padding:6px 10px;font-size:10px;white-space:nowrap;color:var(--warn);font-family:'IBM Plex Mono',monospace;z-index:30}
+
+/* LEGEND */
+.legend{display:flex;gap:20px;flex-wrap:wrap;padding:16px 20px;border-top:1px solid var(--border);background:var(--card)}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim)}
+.leg-box{width:20px;height:12px;border-radius:3px}
+
+/* NOTES */
+.notes{margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.note{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.note-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.note ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+.note li{font-size:12px;color:var(--dim);display:flex;align-items:flex-start;gap:8px;line-height:1.4}
+.note li::before{content:'→';color:var(--accent);flex-shrink:0;font-family:'IBM Plex Mono',monospace}
+.note li.done-item{color:var(--ok)}
+.note li.done-item::before{content:'✓';color:var(--ok)}
+.note li.warn-item{color:var(--warn)}
+.note li.warn-item::before{content:'⚠';color:var(--warn)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-icon">
+    <svg width="22" height="18" viewBox="0 0 18 16" fill="none">
+      <rect x="0" y="5" width="3" height="9" rx="1.5" fill="white"/>
+      <rect x="5" y="1" width="3" height="14" rx="1.5" fill="white"/>
+      <rect x="10" y="3" width="3" height="11" rx="1.5" fill="white" opacity=".85"/>
+      <rect x="15" y="6" width="3" height="7" rx="1.5" fill="white" opacity=".6"/>
+    </svg>
+  </div>
+  <div class="logo-text">
+    <span class="logo-cpm">CPM</span>
+    <span class="logo-monitor">MONITOR</span>
+  </div>
+  <div class="header-title">Plan de Trabajo · Diagrama de Gantt</div>
+  <div class="milestone-badge">🏁 v4.4 STABLE — 27 Mayo 2026</div>
+</div>
+
+<div class="container">
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat"><div class="stat-val c-ok">43</div><div class="stat-label">Tareas completadas</div></div>
+    <div class="stat"><div class="stat-val c-accent">1</div><div class="stat-label">En progreso</div></div>
+    <div class="stat"><div class="stat-val c-warn">9</div><div class="stat-label">Pendientes</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--dim)">4</div><div class="stat-label">Fases planificadas</div></div>
+    <div class="stat"><div class="stat-val c-ok">v4.4</div><div class="stat-label">Versión estable actual</div></div>
+    <div class="stat"><div class="stat-val" style="color:#7B61FF">v5.0</div><div class="stat-label">Versión objetivo</div></div>
+  </div>
+
+  <!-- GANTT -->
+  <div class="gantt-wrap">
+
+    <!-- HEADER MESES -->
+    <div class="gantt-header">
+      <div class="gh-label">Tarea</div>
+      <div class="gh-timeline">
+        <div class="gh-month">ENE–MAR 26</div>
+        <div class="gh-month">ABR 26</div>
+        <div class="gh-month current">MAY 26</div>
+        <div class="gh-month">JUN 26</div>
+        <div class="gh-month">JUL 26</div>
+        <div class="gh-month">AGO 26</div>
+        <div class="gh-month">SEP 26</div>
+        <div class="gh-month">OCT 26</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         FASE 0 — INFRAESTRUCTURA BASE
+    ═══════════════════════════════════════════════ -->
+    <div class="phase-header">
+      <div class="phase-dot" style="background:#7A8499"></div>
+      <span class="phase-name" style="color:#7A8499">FASE 0 — Infraestructura Base</span>
+      <span class="phase-tag tag-done">✓ COMPLETADA</span>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">01</span>
+        <span class="task-icon">🖥️</span>
+        <span class="task-name">VPS + Nginx + Flask API<small>Servidor Hostinger, proxy, SSL</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline" id="tl-0-1">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:0%;width:22%">API + VPS</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">02</span>
+        <span class="task-icon">🗄️</span>
+        <span class="task-name">Base de datos SQLite<small>Plays, usuarios, locales, sesiones</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:0%;width:22%">SQLite schema</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">03</span>
+        <span class="task-icon">🔐</span>
+        <span class="task-name">Sistema de autenticación<small>Login, session tokens, roles</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:5%;width:20%">Auth + roles</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         FASE 1 — APP macOS
+    ═══════════════════════════════════════════════ -->
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--ok)"></div>
+      <span class="phase-name" style="color:var(--ok)">FASE 1 — App macOS</span>
+      <span class="phase-tag tag-done">✓ COMPLETADA</span>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">04</span>
+        <span class="task-icon">🎵</span>
+        <span class="task-name">Scanner macOS<small>Detecta canción activa (Spotify, YT, local)</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:8%;width:18%">scanner_mac.py</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">05</span>
+        <span class="task-icon">📡</span>
+        <span class="task-name">Sync + cola offline<small>Envío de plays, reintentos, SQLite local</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:10%;width:16%">sync.py + DB</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">06</span>
+        <span class="task-icon">🖱️</span>
+        <span class="task-name">Tray + Panel UI (macOS)<small>Ícono barra menú, ventana monitor, PyQt5</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:12%;width:14%">tray_mac + UI</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">07</span>
+        <span class="task-icon">🔄</span>
+        <span class="task-name">Auto-updater macOS<small>Compara version.json, descarga nueva versión</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:16%;width:10%">updater.py</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">08</span>
+        <span class="task-icon">💬</span>
+        <span class="task-name">Mensajes push<small>Motor de mensajes del servidor al cliente</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:18%;width:8%">mensajes.py</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         FASE 2 — APP WINDOWS
+    ═══════════════════════════════════════════════ -->
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--accent)"></div>
+      <span class="phase-name" style="color:var(--accent)">FASE 2 — App Windows</span>
+      <span class="phase-tag tag-done">✓ COMPLETADA</span>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">09</span>
+        <span class="task-icon">🪟</span>
+        <span class="task-name">Scanner Windows<small>scanner_win.py, tray_win.py, PyQt5</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:20%;width:12%">Win port</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">10</span>
+        <span class="task-icon">🔧</span>
+        <span class="task-name">Fix rutas Windows (%APPDATA%)<small>database.py + config.py cross-platform</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:24%;width:8%">paths fix</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">11</span>
+        <span class="task-icon">📦</span>
+        <span class="task-name">PyInstaller onedir + collect_all Qt<small>Sin UPX, sin corrupción de DLLs</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:24%;width:8%">spec + build</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">12</span>
+        <span class="task-icon">💿</span>
+        <span class="task-name">Instalador Inno Setup<small>install en %LOCALAPPDATA%, sin permisos admin</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:26%;width:6%">installer.iss</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">13</span>
+        <span class="task-icon">⚙️</span>
+        <span class="task-name">GitHub Actions build automático<small>Push tag → .exe en GitHub Release</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:27%;width:6%">CI/CD</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         FASE 3 — DASHBOARD & API
+    ═══════════════════════════════════════════════ -->
+    <div class="phase-header">
+      <div class="phase-dot" style="background:#7B61FF"></div>
+      <span class="phase-name" style="color:#7B61FF">FASE 3 — Dashboard & API</span>
+      <span class="phase-tag tag-done">✓ COMPLETADA</span>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">14</span>
+        <span class="task-icon">📊</span>
+        <span class="task-name">Dashboard superadmin<small>KPIs, reporte general, tabla establecimientos</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:12%;width:18%">dashboard v1→v2</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">15</span>
+        <span class="task-icon">🏪</span>
+        <span class="task-name">CRUD Establecimientos<small>Crear, editar, desactivar, ID aleatorio</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:20%;width:12%">locales API</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">16</span>
+        <span class="task-icon">👤</span>
+        <span class="task-name">CRUD Usuarios + vincular local<small>GET/POST/PUT/DELETE, roles, asignación</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:24%;width:10%">usuarios API</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">17</span>
+        <span class="task-icon">🎨</span>
+        <span class="task-name">Rediseño logo + descargar.html<small>SVG ecualizador, wallpaper, nuevo look</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="bar bar-done" style="left:29%;width:6%">UI polish</div>
+        <!-- MILESTONE HOY -->
+        <div class="milestone-marker" style="left:calc(33% - 8px);top:calc(50% - 8px)">
+          <div class="milestone-tip">🏁 v4.3 STABLE<br>26 Mayo 2026</div>
+        </div>
+        <!-- LÍNEA HOY -->
+        <div class="today-line" style="left:33%"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         FASE 4 — FIXES CRÍTICOS PENDIENTES
+    ═══════════════════════════════════════════════ -->
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--bad)"></div>
+      <span class="phase-name" style="color:var(--bad)">FASE 4 — Fixes Críticos</span>
+      <span class="phase-tag tag-done">✓ CASI COMPLETA</span>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">18</span>
+        <span class="task-icon">🪟</span>
+        <span class="task-name">Confirmar sync Windows E2E<small>Nelson — plays llegan al dashboard</small></span>
+        <span class="task-status"><div class="dot-progress"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-warn" style="left:36%;width:8%">con Nelson</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">19</span>
+        <span class="task-icon">🔒</span>
+        <span class="task-name">Mutex instancia única<small>Evitar doble proceso Mac + Windows</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-done" style="left:30%;width:6%">✓ main.py</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">20</span>
+        <span class="task-icon">🛡️</span>
+        <span class="task-name">Activar SSL verification<small>Reemplazar CERT_NONE con certifi correcto</small></span>
+        <span class="task-status"><div class="dot-pending"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-pending" style="left:36%;width:8%">SSL fix</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">21</span>
+        <span class="task-icon">⏱️</span>
+        <span class="task-name">Expiración de sesiones API<small>TTL en session_token, auto-logout</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-done" style="left:30%;width:6%">✓ expires_at</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">22</span>
+        <span class="task-icon">💾</span>
+        <span class="task-name">Backup automático DB VPS<small>Cron diario, retención 30 días</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-done" style="left:30%;width:6%">✓ cron 3am</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         FASE 5 — CATÁLOGO CPM (NEGOCIO)
+    ═══════════════════════════════════════════════ -->
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--warn)"></div>
+      <span class="phase-name" style="color:var(--warn)">FASE 5 — Catálogo CPM & Pagos</span>
+      <span class="phase-tag tag-next">▶ EN CURSO</span>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">23</span>
+        <span class="task-icon">📋</span>
+        <span class="task-name">Tabla catálogo en DB<small>ISRC · artista · título · pvp · valor_estab</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-done" style="left:30%;width:6%">✓ catalogo_cpm</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">24</span>
+        <span class="task-icon">🎛️</span>
+        <span class="task-name">Admin catálogo en dashboard<small>CRUD canciones, precio por canción</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-done" style="left:30%;width:6%">✓ UI + API</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">25</span>
+        <span class="task-icon">⚡</span>
+        <span class="task-name">Lógica cotejo en /v1/plays<small>Match por ISRC → fuzzy artista+título</small></span>
+        <span class="task-status"><div class="dot-pending"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:33%"></div>
+        <div class="bar bar-pending" style="left:49%;width:9%">matching API</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">26</span>
+        <span class="task-icon">💰</span>
+        <span class="task-name">KPIs plays CPM vs estadístico<small>Dashboard muestra ingresos separados</small></span>
+        <span class="task-status"><div class="dot-pending"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:33%"></div>
+        <div class="bar bar-pending" style="left:51%;width:9%">KPIs v2</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">27</span>
+        <span class="task-icon">👁️</span>
+        <span class="task-name">Vista pública catálogo para establecimientos<small>Qué canciones pagan y cuánto</small></span>
+        <span class="task-status"><div class="dot-pending"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:33%"></div>
+        <div class="bar bar-pending" style="left:53%;width:9%">catálogo UI</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">28</span>
+        <span class="task-icon">📦</span>
+        <span class="task-name">Sistema de paquetes 1.000 plays<small>Compra de paquetes por artista</small></span>
+        <span class="task-status"><div class="dot-pending"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:33%"></div>
+        <div class="bar bar-pending" style="left:55%;width:9%">paquetes</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         FASE 6 — DASHBOARD v3
+    ═══════════════════════════════════════════════ -->
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--ok)"></div>
+      <span class="phase-name" style="color:var(--ok)">FASE 6 — Dashboard v3 & Operaciones</span>
+      <span class="phase-tag tag-future">PLANIFICADA</span>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">29</span>
+        <span class="task-icon">🟢</span>
+        <span class="task-name">Online/offline por establecimiento<small>ultimo_ping en API + dot verde/amarillo/gris</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-done" style="left:30%;width:6%">✓ ultimo_ping</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">30</span>
+        <span class="task-icon">📤</span>
+        <span class="task-name">Export CSV / PDF reportes<small>Descarga de datos por período</small></span>
+        <span class="task-status"><div class="dot-pending"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:33%"></div>
+        <div class="bar bar-pending" style="left:63%;width:8%">exports</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">31</span>
+        <span class="task-icon">📧</span>
+        <span class="task-name">Notificación email al crear usuario<small>Credenciales automáticas por correo</small></span>
+        <span class="task-status"><div class="dot-pending"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:33%"></div>
+        <div class="bar bar-pending" style="left:64%;width:7%">email onboard</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">32</span>
+        <span class="task-icon">🔔</span>
+        <span class="task-name">Alerta establecimiento sin actividad<small>Aviso si lleva X días sin plays</small></span>
+        <span class="task-status"><div class="dot-pending"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:33%"></div>
+        <div class="bar bar-pending" style="left:65%;width:7%">alertas</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         FASE 7 — ISRC MATCHING & FINGERPRINTING
+    ═══════════════════════════════════════════════ -->
+    <div class="phase-header">
+      <div class="phase-dot" style="background:#E05555"></div>
+      <span class="phase-name" style="color:#E05555">FASE 7 — Verificación ISRC & Fingerprinting</span>
+      <span class="phase-tag tag-done">✓ COMPLETADA</span>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">33</span>
+        <span class="task-icon">🎵</span>
+        <span class="task-name">ISRC real desde MusicBrainz<small>Spotify scanner → MusicBrainz API (gratis)</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-done" style="left:30%;width:6%">✓ MusicBrainz</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">34</span>
+        <span class="task-icon">🎙️</span>
+        <span class="task-name">Audio fingerprinting ACRCloud<small>Identifica cualquier fuente: YouTube, radio, TV</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-done" style="left:30%;width:6%">✓ ACRCloud</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">35</span>
+        <span class="task-icon">🔊</span>
+        <span class="task-name">BlackHole loopback macOS<small>Captura audio del sistema sin micrófono</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-done" style="left:30%;width:6%">✓ BlackHole 2ch</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label">
+        <span class="task-num">36</span>
+        <span class="task-icon">🗂️</span>
+        <span class="task-name">Caché ISRC en memoria<small>Evita llamadas repetidas · MusicBrainz + ACRCloud</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
+      </div>
+      <div class="task-timeline">
+        <div class="month-grid">
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col current-month"></div>
+          <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
+          <div class="month-col"></div><div class="month-col"></div>
+        </div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-done" style="left:30%;width:6%">✓ _cache dict</div>
+      </div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend">
+      <div class="leg-item"><div class="leg-box" style="background:rgba(46,204,138,.3);border:1px solid var(--ok)"></div>Completado</div>
+      <div class="leg-item"><div class="leg-box" style="background:rgba(26,127,212,.3);border:1px solid var(--accent)"></div>En progreso</div>
+      <div class="leg-item"><div class="leg-box" style="background:rgba(240,160,48,.2);border:1px solid var(--warn)"></div>Urgente</div>
+      <div class="leg-item"><div class="leg-box" style="background:rgba(58,66,85,.4);border:1px solid var(--faint)"></div>Pendiente</div>
+      <div class="leg-item">
+        <div style="width:14px;height:14px;background:var(--warn);transform:rotate(45deg);flex-shrink:0"></div>
+        Hito
+      </div>
+      <div class="leg-item">
+        <div style="width:2px;height:14px;background:var(--warn)"></div>
+        Hoy (26 Mayo 2026)
+      </div>
+    </div>
+
+  </div><!-- /gantt-wrap -->
+
+  <!-- NOTAS -->
+  <div class="notes">
+
+    <div class="note">
+      <div class="note-title" style="color:var(--ok)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Completado al 26 Mayo 2026
+      </div>
+      <ul>
+        <li class="done-item">App macOS estable en producción</li>
+        <li class="done-item">App Windows — Inno Setup installer</li>
+        <li class="done-item">GitHub Actions build automático</li>
+        <li class="done-item">Dashboard admin completo (CRUD usuarios + locales)</li>
+        <li class="done-item">API REST completa con autenticación por roles</li>
+        <li class="done-item">Mensajes push, auto-updater, cola offline</li>
+        <li class="done-item">Página descargar.html rediseñada</li>
+        <li class="done-item">Tag v4.3-stable en GitHub</li>
+      </ul>
+    </div>
+
+    <div class="note">
+      <div class="note-title" style="color:var(--bad)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3.5M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Fixes críticos — hacer primero
+      </div>
+      <ul>
+        <li class="warn-item">Confirmar sync Windows con Nelson (E2E)</li>
+        <li class="warn-item">Mutex instancia única (doble proceso)</li>
+        <li class="warn-item">SSL verification — CERT_NONE es inseguro</li>
+        <li class="warn-item">Expiración de sesiones en API</li>
+        <li class="warn-item">Backup automático SQLite en VPS</li>
+      </ul>
+    </div>
+
+    <div class="note">
+      <div class="note-title" style="color:var(--warn)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v4M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Modelo de negocio — Fase 5
+      </div>
+      <ul>
+        <li>Catálogo CPM: ISRC + artista + título + PVP ($3.000 COP estándar)</li>
+        <li>Establecimiento recibe $500 COP por play CPM (16,67%)</li>
+        <li>CPM retiene $2.500 COP por play (83,33%)</li>
+        <li>Paquetes de 1.000 plays = $3.000.000 COP al artista</li>
+        <li>Match: primero por ISRC, luego artista+título (fuzzy)</li>
+        <li>Plays sin match = estadísticos, sin ingreso</li>
+      </ul>
+    </div>
+
+    <div class="note">
+      <div class="note-title" style="color:var(--dim)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 8l3-3M8 8v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Infraestructura VPS actual
+      </div>
+      <ul>
+        <li>cpmtracks.service → Flask :5000 → monitor.cpmtracks.com</li>
+        <li>cpmmatch.service → Flask :5001 → (prototipo, sin DNS activo)</li>
+        <li>ytbackup-api.service → Python :5556 → api.ytbackup.pro</li>
+        <li>facilvideo-api.service → Python :8000 → api.facilvideo.com</li>
+        <li>Docker instalado pero sin usar — considerar migración gradual</li>
+        <li>MySQL + PostgreSQL + Redis corriendo simultáneamente</li>
+      </ul>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>
