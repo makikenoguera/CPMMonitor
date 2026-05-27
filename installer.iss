@@ -1,12 +1,12 @@
 [Setup]
 AppName=CPM Monitor
-AppVersion=4.3
+AppVersion=4.5
 AppPublisher=CPM Tracks
 AppPublisherURL=https://monitor.cpmtracks.com
 DefaultDirName={localappdata}\CPMTracks\App
 DefaultGroupName=CPM Monitor
 DisableProgramGroupPage=yes
-OutputBaseFilename=CPMMonitor_Setup_v4.3
+OutputBaseFilename=CPMMonitor_Setup_v4.5
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
