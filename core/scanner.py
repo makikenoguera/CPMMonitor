@@ -199,8 +199,30 @@ def _scan_youtube_safari():
     return None
 
 
-# Orden de prioridad: streaming > local > web
+def _scan_acrcloud():
+    """
+    Scanner de audio por huella acústica vía ACRCloud.
+    Funciona con cualquier fuente: YouTube, Spotify, radio, TV, local.
+    Solo se activa si ACRCloud está configurado en config.json.
+    """
+    try:
+        from core.config import cargar
+        cfg = cargar()
+        if not cfg.get("acrcloud_key"):
+            return None
+    except Exception:
+        return None
+    try:
+        from core.acrcloud_api import identify_system_audio
+        return identify_system_audio(duration=10)
+    except Exception as e:
+        log.debug(f"ACRCloud scanner error: {e}")
+        return None
+
+
+# Orden de prioridad: fingerprint > streaming > local > web
 _SCANNERS = [
+    _scan_acrcloud,
     _scan_spotify,
     _scan_apple_music,
     _scan_quicktime,
