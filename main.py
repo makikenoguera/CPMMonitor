@@ -11,6 +11,32 @@ import logging
 
 _IS_WIN = platform.system() == "Windows"
 
+# ── Mutex: una sola instancia ────────────────────────────────────────────────
+def _acquire_instance_lock():
+    """Bloquea si ya hay una instancia corriendo. Retorna el lock o sale."""
+    if _IS_WIN:
+        import ctypes
+        _mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "CPMMonitor_SingleInstance")
+        if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+            sys.exit(0)
+        return _mutex  # mantener referencia para que no se libere
+    else:
+        import fcntl
+        _data_dir = os.path.join(os.path.expanduser("~"), "Library", "Application Support", "CPMTracks")
+        os.makedirs(_data_dir, exist_ok=True)
+        _lock_path = os.path.join(_data_dir, "cpmtracks.lock")
+        try:
+            _lf = open(_lock_path, 'w')
+            fcntl.flock(_lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            _lf.write(str(os.getpid()))
+            _lf.flush()
+            return _lf  # mantener referencia viva
+        except (IOError, OSError):
+            sys.exit(0)
+
+_INSTANCE_LOCK = _acquire_instance_lock()
+# ─────────────────────────────────────────────────────────────────────────────
+
 # Logging
 if _IS_WIN:
     _log_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "CPMTracks", "Logs")

@@ -434,10 +434,10 @@ body{padding-bottom:24px}
         </div>
         <table>
           <thead>
-            <tr><th>Nombre</th><th>ID</th><th>Ciudad</th><th>Tipo</th><th>Estado</th><th></th></tr>
-            <tr class="filter-row"><th colspan="6"><input id="flt-loc" class="tbl-filter" placeholder="Filtrar…" oninput="_pags.admin_loc.page=0;_renderAdminLocales()"></th></tr>
+            <tr><th>Nombre</th><th>ID</th><th>Ciudad</th><th>Tipo</th><th>Estado</th><th>Monitor</th><th></th></tr>
+            <tr class="filter-row"><th colspan="7"><input id="flt-loc" class="tbl-filter" placeholder="Filtrar…" oninput="_pags.admin_loc.page=0;_renderAdminLocales()"></th></tr>
           </thead>
-          <tbody id="admin-locales-tbody"><tr><td colspan="6" class="empty">Cargando...</td></tr></tbody>
+          <tbody id="admin-locales-tbody"><tr><td colspan="7" class="empty">Cargando...</td></tr></tbody>
         </table>
         <div id="pag-admin_loc"></div>
       </div>
@@ -457,6 +457,22 @@ body{padding-bottom:24px}
         </table>
         <div id="pag-admin_usr"></div>
       </div>
+    </div>
+
+    <!-- CATÁLOGO CPM -->
+    <div class="admin-section" style="grid-column:1/-1">
+      <div class="admin-section-header">
+        <span class="admin-section-title">🎵 Catálogo CPM — Canciones que pagan</span>
+        <button class="btn-add" onclick="openModalCatalogo()">+ Agregar canción</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Artista</th><th>Título</th><th>ISRC</th><th>PVP (artista)</th><th>Valor establecimiento</th><th>Estado</th><th></th></tr>
+          <tr class="filter-row"><th colspan="7"><input id="flt-cat" class="tbl-filter" placeholder="Filtrar artista, título o ISRC…" oninput="_pags.admin_cat.page=0;_renderAdminCatalogo()"></th></tr>
+        </thead>
+        <tbody id="admin-catalogo-tbody"><tr><td colspan="7" class="empty">Cargando...</td></tr></tbody>
+      </table>
+      <div id="pag-admin_cat"></div>
     </div>
 
     <!-- MENSAJES PUSH -->
@@ -1209,6 +1225,12 @@ function _renderAdminLocales(){
   const q=(document.getElementById('flt-loc')?.value||'').toLowerCase();
   const rows=q?all.filter(l=>(l.nombre||'').toLowerCase().includes(q)||(l.id_local||'').toLowerCase().includes(q)||(l.ciudad||'').toLowerCase().includes(q)):all;
   const slice=pg.size>0?rows.slice(pg.page*pg.size,(pg.page+1)*pg.size):rows;
+  const _pingDot=(ping)=>{
+    const ago=(Date.now()/1000)-(ping||0);
+    if(!ping||ago>86400) return '<span title="Sin actividad reciente" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--faint);border:1px solid var(--border)"></span>';
+    if(ago<1800) return '<span title="En línea (últimos 30 min)" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)"></span>';
+    return '<span title="Activo (últimas 24h)" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--warn)"></span>';
+  };
   document.getElementById('admin-locales-tbody').innerHTML=slice.map(l=>`
     <tr>
       <td class="td-p">${l.nombre||'—'}</td>
@@ -1216,11 +1238,12 @@ function _renderAdminLocales(){
       <td>${l.ciudad||'—'}</td>
       <td>${l.tipo||'—'}</td>
       <td>${l.activo?'<span class="badge badge-ok">Activo</span>':'<span class="badge badge-bad">Inactivo</span>'}</td>
+      <td style="text-align:center">${_pingDot(l.ultimo_ping)}</td>
       <td style="display:flex;gap:6px">
         <button class="btn-sm" onclick='editarLocal(${JSON.stringify(l).replace(/'/g,"&#39;")})'>Editar</button>
         <button class="btn-sm danger" onclick="eliminarLocal('${l.id_local}','${(l.nombre||'').replace(/'/g,'')}')">${l.activo?'Desactivar':'Activar'}</button>
       </td>
-    </tr>`).join('')||'<tr><td colspan="6" class="empty">Sin locales</td></tr>';
+    </tr>`).join('')||'<tr><td colspan="7" class="empty">Sin locales</td></tr>';
   renderPag('admin_loc',rows.length);
 }
 
@@ -1530,6 +1553,130 @@ async function eliminarMensaje(id,titulo){
 
 // ── STATUS ────────────────────────────────────────────────────────
 function setStatus(msg){document.getElementById('s-msg').textContent=msg;document.getElementById('s-time').textContent=new Date().toLocaleTimeString('es');}
+
+// ── CATÁLOGO CPM ──────────────────────────────────────────────────
+let _adminCatalogoData=[];
+async function loadAdminCatalogo(){
+  try{
+    const r=await fetch(`${API}/admin/catalogo`,{headers:authHeader()});
+    const d=await r.json();
+    _adminCatalogoData=d.canciones||[];
+    _renderAdminCatalogo();
+  }catch(e){document.getElementById('admin-catalogo-tbody').innerHTML='<tr><td colspan="7" class="empty">Error cargando</td></tr>';}
+}
+function _renderAdminCatalogo(){
+  const pg=_pags.admin_cat;
+  const q=(document.getElementById('flt-cat')?.value||'').toLowerCase();
+  const all=_adminCatalogoData;
+  const rows=q?all.filter(s=>(s.artista||'').toLowerCase().includes(q)||(s.titulo||'').toLowerCase().includes(q)||(s.isrc||'').toLowerCase().includes(q)):all;
+  const slice=pg.size>0?rows.slice(pg.page*pg.size,(pg.page+1)*pg.size):rows;
+  document.getElementById('admin-catalogo-tbody').innerHTML=slice.map(s=>`
+    <tr>
+      <td class="td-f">${s.artista}</td>
+      <td class="td-f">${s.titulo}</td>
+      <td class="td-f mono" style="color:var(--accent)">${s.isrc||'—'}</td>
+      <td class="mono td-warn">$${(s.pvp||3000).toLocaleString('es-CO')}</td>
+      <td class="mono td-ok">$${(s.valor_establecimiento||500).toLocaleString('es-CO')}</td>
+      <td>${s.activo?'<span class="badge badge-ok">Activa</span>':'<span class="badge badge-bad">Inactiva</span>'}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn-sm" onclick='editarCancion(${JSON.stringify(s)})'>Editar</button>
+        <button class="btn-sm danger" onclick="eliminarCancion(${s.id},'${(s.titulo||'').replace(/'/g,'')}')">${s.activo?'Desactivar':'Activar'}</button>
+      </td>
+    </tr>`).join('')||'<tr><td colspan="7" class="empty">Sin canciones en el catálogo</td></tr>';
+  renderPag('admin_cat',rows.length);
+}
+function openModalCatalogo(){
+  document.getElementById('mc-id').value='';
+  document.getElementById('mc-artista').value='';
+  document.getElementById('mc-titulo').value='';
+  document.getElementById('mc-isrc').value='';
+  document.getElementById('mc-pvp').value='3000';
+  document.getElementById('mc-valor-estab').value='500';
+  document.getElementById('mc-submit-btn').textContent='Agregar canción';
+  document.getElementById('modal-catalogo-title').textContent='Nueva canción';
+  document.getElementById('modal-catalogo').classList.add('open');
+}
+function editarCancion(s){
+  document.getElementById('mc-id').value=s.id;
+  document.getElementById('mc-artista').value=s.artista||'';
+  document.getElementById('mc-titulo').value=s.titulo||'';
+  document.getElementById('mc-isrc').value=s.isrc||'';
+  document.getElementById('mc-pvp').value=s.pvp||3000;
+  document.getElementById('mc-valor-estab').value=s.valor_establecimiento||500;
+  document.getElementById('mc-submit-btn').textContent='Guardar cambios';
+  document.getElementById('modal-catalogo-title').textContent='Editar canción';
+  document.getElementById('modal-catalogo').classList.add('open');
+}
+async function guardarCancion(){
+  const id=document.getElementById('mc-id').value;
+  const body={
+    artista:document.getElementById('mc-artista').value.trim(),
+    titulo:document.getElementById('mc-titulo').value.trim(),
+    isrc:document.getElementById('mc-isrc').value.trim(),
+    pvp:parseInt(document.getElementById('mc-pvp').value)||3000,
+    valor_establecimiento:parseInt(document.getElementById('mc-valor-estab').value)||500,
+  };
+  if(!body.artista||!body.titulo){alert('Artista y título son requeridos');return;}
+  try{
+    const url=id?`${API}/admin/catalogo/${id}`:`${API}/admin/catalogo`;
+    const method=id?'PUT':'POST';
+    const r=await fetch(url,{method,headers:authHeader(),body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!r.ok){alert(d.error||'Error guardando');return;}
+    closeModal('modal-catalogo');
+    await loadAdminCatalogo();
+    setStatus(id?'Canción actualizada':'Canción agregada al catálogo');
+  }catch(e){alert('Error de conexión');}
+}
+async function eliminarCancion(id, titulo){
+  const nuevoEstado=_adminCatalogoData.find(s=>s.id===id)?.activo?0:1;
+  const accion=nuevoEstado?'Activar':'Desactivar';
+  if(!confirm(`¿${accion} "${titulo}" del catálogo?`))return;
+  try{
+    const r=await fetch(`${API}/admin/catalogo/${id}`,{method:'PUT',headers:authHeader(),body:JSON.stringify({activo:nuevoEstado})});
+    const d=await r.json();
+    if(!r.ok){alert(d.error||'Error');return;}
+    await loadAdminCatalogo();
+    setStatus(`Canción ${nuevoEstado?'activada':'desactivada'}`);
+  }catch(e){alert('Error de conexión');}
+}
 </script>
+
+<!-- MODAL CATÁLOGO -->
+<div class="overlay" id="modal-catalogo">
+  <div class="modal" style="width:500px">
+    <h3 id="modal-catalogo-title">Nueva canción</h3>
+    <input type="hidden" id="mc-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="mfield" style="grid-column:1/-1">
+        <label>Artista</label>
+        <input type="text" id="mc-artista" placeholder="Ej: KAROL G">
+      </div>
+      <div class="mfield" style="grid-column:1/-1">
+        <label>Título</label>
+        <input type="text" id="mc-titulo" placeholder="Ej: PROVENZA">
+      </div>
+      <div class="mfield" style="grid-column:1/-1">
+        <label>ISRC <span style="color:var(--dim);font-weight:400;font-size:10px">(opcional si aún no se tiene)</span></label>
+        <input type="text" id="mc-isrc" placeholder="Ej: USUM72205907" style="font-family:'IBM Plex Mono',monospace">
+      </div>
+      <div class="mfield">
+        <label>PVP — Artista paga (COP)</label>
+        <input type="number" id="mc-pvp" value="3000" min="0" step="100">
+        <div class="hint">Precio estándar: $3.000</div>
+      </div>
+      <div class="mfield">
+        <label>Valor establecimiento (COP)</label>
+        <input type="number" id="mc-valor-estab" value="500" min="0" step="100">
+        <div class="hint">16,67% del PVP = $500</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-s" onclick="closeModal('modal-catalogo')">Cancelar</button>
+      <button class="btn btn-p" id="mc-submit-btn" onclick="guardarCancion()">Agregar canción</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

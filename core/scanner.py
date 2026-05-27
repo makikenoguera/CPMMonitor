@@ -40,12 +40,19 @@ def _scan_spotify():
     if len(parts) < 3:
         return None
     try:
-        isrc = parts[2].split(":")[-1].strip()
+        track_id = parts[2].split(":")[-1].strip()
+        # Intentar obtener ISRC real via Spotify Web API
+        try:
+            from core.spotify_api import get_isrc
+            isrc = get_isrc(track_id) or track_id
+        except Exception:
+            isrc = track_id
         return {
             "fuente":       "Spotify",
             "contenido":    parts[0].strip(),
             "duracion_seg": float(parts[1]) / 1000,
             "isrc":         isrc,
+            "spotify_track_id": track_id,
         }
     except (ValueError, IndexError):
         return None
