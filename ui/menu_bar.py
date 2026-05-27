@@ -47,6 +47,9 @@ class CPMMenuBar(rumps.App):
         self._play_contenido = ""
         self._play_isrc = ""
         self._play_guardado = False
+        # Mínimo de segundos detectando el mismo contenido antes de guardarlo
+        # Evita registrar videos de YouTube que el usuario solo roza al scrollear
+        self._PLAY_MIN_SEG = 15
 
         # Mensajes: IDs ya notificados y contador no leídos
         self._mensajes_notificados = set()
@@ -156,6 +159,11 @@ class CPMMenuBar(rumps.App):
 
     def _guardar_play(self):
         if not self._play_actual or not self._play_inicio:
+            return
+        seg_escuchados = time.time() - self._play_inicio
+        # No guardar si el play duró menos del mínimo (scroll rápido en YouTube, etc.)
+        if seg_escuchados < self._PLAY_MIN_SEG:
+            log.debug(f"Play ignorado — duración {seg_escuchados:.0f}s < mínimo {self._PLAY_MIN_SEG}s")
             return
         cfg = config.cargar()
         id_local = cfg.get("id_local", "SIN_CONFIGURAR")

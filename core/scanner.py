@@ -5,8 +5,12 @@ Retorna dict con fuente, contenido, duracion_seg, isrc o None si no hay nada.
 """
 import subprocess
 import logging
+import re
 
 log = logging.getLogger("scanner")
+
+# Regex para limpiar prefijos de notificación de browser: "(206) Título" → "Título"
+_RE_NOTIF = re.compile(r'^\(\d+\)\s*')
 
 
 def _osascript(script, timeout=2):
@@ -163,7 +167,7 @@ def _scan_youtube_chrome():
     if not res:
         return None
     if "YouTube" in res and res != "YouTube":
-        titulo = res.replace(" - YouTube", "").strip()
+        titulo = _RE_NOTIF.sub('', res.replace(" - YouTube", "").strip())
         if titulo:
             return {
                 "fuente":       "YouTube",
@@ -188,7 +192,7 @@ def _scan_youtube_safari():
     if not res:
         return None
     if "YouTube" in res and res != "YouTube":
-        titulo = res.replace(" - YouTube", "").strip()
+        titulo = _RE_NOTIF.sub('', res.replace(" - YouTube", "").strip())
         if titulo:
             return {
                 "fuente":       "YouTube (Safari)",

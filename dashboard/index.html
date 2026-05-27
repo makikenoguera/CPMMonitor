@@ -151,6 +151,7 @@ td{padding:11px 18px;font-size:12px;color:var(--dim)}
 .btn-sm{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:inherit}
 .btn-sm:hover{color:var(--fg);border-color:var(--borders)}
 .btn-sm.danger:hover{color:var(--bad);border-color:var(--bad)}
+.btn-sm.ok:hover{color:var(--ok);border-color:var(--ok)}
 
 /* TABLE FILTER ROW */
 .filter-row th{padding:6px 10px !important;background:var(--bg) !important;border-bottom:1px solid var(--border)}
@@ -1581,7 +1582,8 @@ function _renderAdminCatalogo(){
       <td>${s.activo?'<span class="badge badge-ok">Activa</span>':'<span class="badge badge-bad">Inactiva</span>'}</td>
       <td style="display:flex;gap:6px">
         <button class="btn-sm" onclick='editarCancion(${JSON.stringify(s)})'>Editar</button>
-        <button class="btn-sm danger" onclick="eliminarCancion(${s.id},'${(s.titulo||'').replace(/'/g,'')}')">${s.activo?'Desactivar':'Activar'}</button>
+        <button class="btn-sm ${s.activo?'danger':'ok'}" onclick="toggleCancion(${s.id},'${(s.titulo||'').replace(/'/g,'')}')">${s.activo?'Desactivar':'Activar'}</button>
+        <button class="btn-sm danger" onclick="deleteCancion(${s.id},'${(s.titulo||'').replace(/'/g,'')}')">Eliminar</button>
       </td>
     </tr>`).join('')||'<tr><td colspan="7" class="empty">Sin canciones en el catálogo</td></tr>';
   renderPag('admin_cat',rows.length);
@@ -1629,16 +1631,26 @@ async function guardarCancion(){
     setStatus(id?'Canción actualizada':'Canción agregada al catálogo');
   }catch(e){alert('Error de conexión');}
 }
-async function eliminarCancion(id, titulo){
+async function toggleCancion(id, titulo){
   const nuevoEstado=_adminCatalogoData.find(s=>s.id===id)?.activo?0:1;
-  const accion=nuevoEstado?'Activar':'Desactivar';
-  if(!confirm(`¿${accion} "${titulo}" del catálogo?`))return;
+  const accion=nuevoEstado?'activar':'desactivar';
+  if(!confirm(`¿${accion.charAt(0).toUpperCase()+accion.slice(1)} "${titulo}"?`))return;
   try{
     const r=await fetch(`${API}/admin/catalogo/${id}`,{method:'PUT',headers:authHeader(),body:JSON.stringify({activo:nuevoEstado})});
     const d=await r.json();
     if(!r.ok){alert(d.error||'Error');return;}
     await loadAdminCatalogo();
     setStatus(`Canción ${nuevoEstado?'activada':'desactivada'}`);
+  }catch(e){alert('Error de conexión');}
+}
+async function deleteCancion(id, titulo){
+  if(!confirm(`¿Eliminar PERMANENTEMENTE "${titulo}" del catálogo?\nEsta acción no se puede deshacer.`))return;
+  try{
+    const r=await fetch(`${API}/admin/catalogo/${id}`,{method:'DELETE',headers:authHeader()});
+    const d=await r.json();
+    if(!r.ok){alert(d.error||'Error');return;}
+    await loadAdminCatalogo();
+    setStatus(`Canción eliminada`);
   }catch(e){alert('Error de conexión');}
 }
 </script>
