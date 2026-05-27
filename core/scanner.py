@@ -6,11 +6,16 @@ Retorna dict con fuente, contenido, duracion_seg, isrc o None si no hay nada.
 import subprocess
 import logging
 import re
+import time
 
 log = logging.getLogger("scanner")
 
 # Regex para limpiar prefijos de notificación de browser: "(206) Título" → "Título"
 _RE_NOTIF = re.compile(r'^\(\d+\)\s*')
+
+# Throttle para ACRCloud: mínimo 30s entre llamadas (graba 10s de audio)
+_acrcloud_last_call: float = 0.0
+_ACRCLOUD_MIN_INTERVAL = 30.0
 
 
 def _osascript(script, timeout=2):
@@ -206,9 +211,14 @@ def _scan_youtube_safari():
 def _scan_acrcloud():
     """
     Scanner de audio por huella acústica vía ACRCloud.
-    Funciona con cualquier fuente: YouTube, Spotify, radio, TV, local.
-    Solo se activa si ACRCloud está configurado en config.json.
+    - Solo se activa si ningún otro scanner detectó nada (último en prioridad).
+    - Mínimo 30 segundos entre llamadas para no saturar el micrófono.
+    - Solo si ACRCloud está configurado en config.json.
     """
+    global _acrcloud_last_call
+    now = time.time()
+    if now - _acrcloud_last_call < _ACRCLOUD_MIN_INTERVAL:
+        return None
     try:
         from core.config import cargar
         cfg = cargar()
@@ -218,27 +228,30 @@ def _scan_acrcloud():
         return None
     try:
         from core.acrcloud_api import identify_system_audio
+        _acrcloud_last_call = now
         return identify_system_audio(duration=10)
     except Exception as e:
         log.debug(f"ACRCloud scanner error: {e}")
         return None
 
 
-# Orden de prioridad: fingerprint > streaming > local > web
+# Orden de prioridad:
+#   1-4. Scanners rápidos (AppleScript, sin audio)  → respuesta instantánea
+#   5.   ACRCloud (audio fingerprint, 10s grabación) → solo si los demás fallan
 _SCANNERS = [
-    _scan_acrcloud,
     _scan_spotify,
     _scan_apple_music,
     _scan_quicktime,
     _scan_vlc,
     _scan_youtube_chrome,
     _scan_youtube_safari,
+    _scan_acrcloud,      # ← último: usa micrófono, costoso
 ]
 
 
 def escanear():
     """
-    Ejecuta todos los scanners en orden de prioridad.
+    Ejecuta los scanners en orden de prioridad.
     Retorna el primer resultado válido o None.
     """
     for scanner in _SCANNERS:
