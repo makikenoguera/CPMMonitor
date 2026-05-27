@@ -250,6 +250,11 @@ class CPMTray:
             self._act_sync.setText("↑ Sincronizar ahora")
             log.warning(f"Sync error: {e}")
 
+    @staticmethod
+    def _exe_dir():
+        """Directorio del ejecutable — necesario para que Windows encuentre las DLLs de PyInstaller."""
+        return os.path.dirname(os.path.abspath(sys.executable))
+
     def _verificar_mensajes(self):
         def _check():
             try:
@@ -262,20 +267,23 @@ class CPMTray:
                     for m in nuevos:
                         self._mensajes_notificados.add(m["id"])
                     log.info(f"[MENSAJES] {len(nuevos)} nuevos, lanzando banner")
-                    subprocess.Popen([sys.executable, "--banner"])
+                    subprocess.Popen([sys.executable, "--banner"],
+                                     cwd=self._exe_dir())
             except Exception as e:
                 log.warning(f"Error verificando mensajes: {e}")
         threading.Thread(target=_check, daemon=True).start()
 
     def _abrir_mensajes(self):
         try:
-            subprocess.Popen([sys.executable, "--mensajes"])
+            subprocess.Popen([sys.executable, "--mensajes"],
+                             cwd=self._exe_dir())
         except Exception as e:
             log.warning(f"Error abriendo mensajes: {e}")
 
     def _abrir_panel(self):
         try:
-            subprocess.Popen([sys.executable, "--panel"])
+            subprocess.Popen([sys.executable, "--panel"],
+                             cwd=self._exe_dir())
         except Exception as e:
             log.warning(f"Error abriendo panel: {e}")
 
