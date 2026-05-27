@@ -119,15 +119,14 @@ class CPMMenuBar(rumps.App):
                 self._play_guardado  = False
 
             # Calcular porcentaje por tiempo transcurrido
-            duracion = self._play_duracion
+            # Si la fuente no provee duración (YouTube, etc.) se asume 3:30 = 210s
+            _DUR_DEFECTO = 210
+            duracion = self._play_duracion if self._play_duracion > 0 else _DUR_DEFECTO
             if self._play_inicio:
                 seg = time.time() - self._play_inicio
-                if duracion > 0:
-                    pct = min(100, (seg / duracion) * 100)
-                    emoji = "✓" if pct >= 90 else "◔" if pct >= 50 else "○"
-                    self.item_porcentaje.title = f"  {emoji} {pct:.0f}%"
-                else:
-                    self.item_porcentaje.title = f"  ⏱ {int(seg)}s"
+                pct = min(100, (seg / duracion) * 100)
+                emoji = "✓" if pct >= 90 else "◔" if pct >= 50 else "○"
+                self.item_porcentaje.title = f"  {emoji} {pct:.0f}%"
 
             corto = resultado["contenido"][:38] + "…" if len(resultado["contenido"]) > 38 else resultado["contenido"]
             self.item_ultimo.title = f"♪ {resultado['fuente']}: {corto}"
