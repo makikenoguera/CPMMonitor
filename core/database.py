@@ -76,7 +76,8 @@ def obtener_pendientes(limite=100):
         con = _connect()
         rows = con.execute(
             """SELECT id, idempotency_key, timestamp, id_local, fuente,
-                      contenido, duracion, isrc, intentos
+                      contenido, duracion, isrc, intentos,
+                      porcentaje, segundos_escuchados
                FROM plays
                WHERE enviado = 0 AND intentos < 5
                ORDER BY created_at ASC

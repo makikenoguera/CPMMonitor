@@ -52,15 +52,17 @@ def _enviar_batch(pendientes, endpoint, token):
     id_map  = {}  # idempotency_key -> db_id
 
     for row in pendientes:
-        db_id, ikey, timestamp, id_local, fuente, contenido, duracion, isrc, intentos = row
+        db_id, ikey, timestamp, id_local, fuente, contenido, duracion, isrc, intentos, porcentaje, seg_escuchados = row
         payload.append({
-            "idempotency_key": ikey,
-            "timestamp":       timestamp,
-            "id_local":        id_local,
-            "fuente":          fuente,
-            "contenido":       contenido,
-            "duracion":        duracion,
-            "isrc":            isrc,
+            "idempotency_key":    ikey,
+            "timestamp":          timestamp,
+            "id_local":           id_local,
+            "fuente":             fuente,
+            "contenido":          contenido,
+            "duracion":           duracion,
+            "isrc":               isrc,
+            "porcentaje":         porcentaje or 0,
+            "segundos_escuchados": seg_escuchados or 0,
         })
         id_map[ikey] = db_id
 
