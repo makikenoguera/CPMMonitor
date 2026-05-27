@@ -30,7 +30,7 @@ def _scan_spotify():
     tell application "Spotify"
         if player state is not playing then return ""
         set t to current track
-        return (artist of t) & " - " & (name of t) & "||" & (duration of t) & "||" & (id of t)
+        return (artist of t) & tab & (name of t) & "||" & (duration of t) & "||" & (id of t)
     end tell
     '''
     res = _osascript(script)
@@ -40,18 +40,27 @@ def _scan_spotify():
     if len(parts) < 3:
         return None
     try:
-        track_id = parts[2].split(":")[-1].strip()
-        # Intentar obtener ISRC real via Spotify Web API
+        # parts[0] = "artista|||titulo", parts[1] = duration ms, parts[2] = spotify:track:ID
+        art_tit = parts[0].split("\t", 1)
+        artista = art_tit[0].strip()
+        titulo  = art_tit[1].strip() if len(art_tit) > 1 else artista
+        contenido = f"{artista} - {titulo}"
+        track_id  = parts[2].split(":")[-1].strip()
+
+        # ISRC via MusicBrainz (gratuito, sin suscripción)
         try:
-            from core.spotify_api import get_isrc
-            isrc = get_isrc(track_id) or track_id
+            from core.musicbrainz_api import get_isrc as mb_isrc
+            isrc = mb_isrc(artista, titulo) or track_id
         except Exception:
             isrc = track_id
+
         return {
-            "fuente":       "Spotify",
-            "contenido":    parts[0].strip(),
-            "duracion_seg": float(parts[1]) / 1000,
-            "isrc":         isrc,
+            "fuente":           "Spotify",
+            "contenido":        contenido,
+            "artista":          artista,
+            "titulo":           titulo,
+            "duracion_seg":     float(parts[1]) / 1000,
+            "isrc":             isrc,
             "spotify_track_id": track_id,
         }
     except (ValueError, IndexError):
