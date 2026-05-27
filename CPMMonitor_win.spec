@@ -1,9 +1,18 @@
 # -*- mode: python ; coding: utf-8 -*-
 # PyInstaller spec para Windows — onedir (Inno Setup crea el instalador final)
 
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs
 
 qt5_datas, qt5_binaries, qt5_hidden = collect_all('PyQt5')
+
+# Asegura que los DLLs de Qt5 se incluyan (necesario con PyQt5 5.15.x en PyInstaller 6.x)
+try:
+    qt5_qt_datas, qt5_qt_binaries, qt5_qt_hidden = collect_all('PyQt5.Qt5')
+    qt5_datas    += qt5_qt_datas
+    qt5_binaries += qt5_qt_binaries
+    qt5_hidden   += qt5_qt_hidden
+except Exception:
+    pass
 
 a = Analysis(
     ['main.py'],
@@ -51,7 +60,7 @@ a = Analysis(
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=['hooks/rthook_win_dll.py'],
     excludes=['rumps', 'AppKit', 'Foundation', 'objc', 'PyQt6'],
     noarchive=False,
     optimize=0,
