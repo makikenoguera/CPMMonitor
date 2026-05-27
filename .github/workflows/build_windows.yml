@@ -41,19 +41,26 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CPMMonitor-Installer
-          path: Output\CPMMonitor_Setup_v4.3.exe
+          path: Output\CPMMonitor_Setup_v4.5.exe
           retention-days: 30
 
       - name: Crear Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: Output\CPMMonitor_Setup_v4.3.exe
+          files: Output\CPMMonitor_Setup_v4.5.exe
           name: CPM Monitor ${{ github.ref_name }}
           body: |
             ## CPM Monitor ${{ github.ref_name }} — Windows
 
             ### Instalación
-            1. Descarga `CPMMonitor_Setup_v4.3.exe`
+            1. Descarga `CPMMonitor_Setup_v4.5.exe`
             2. Ejecuta el instalador (si SmartScreen lo bloquea → "Más información" → "Ejecutar de todas formas")
             3. Ingresa con las credenciales que recibiste por correo
+
+            ### Novedades v4.5
+            - Catálogo CPM funcional — match ISRC automático con plays
+            - Scanner YouTube mejorado — sin acceso al micrófono
+            - Logo oficial CPM Tracks
+            - Porcentaje de reproducción correcto
+            - Panel y mensajes abren correctamente desde el menú
