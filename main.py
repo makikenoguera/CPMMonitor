@@ -11,15 +11,23 @@ import logging
 
 _IS_WIN = platform.system() == "Windows"
 
-# ── Mutex: una sola instancia ────────────────────────────────────────────────
+# ── Mutex: una sola instancia (solo para background / primer arranque) ────────
+# Los modos --panel, --mensajes y --banner son subprocesos legítimos lanzados
+# desde el proceso background — NO deben competir por el lock.
+_SUBPROC_MODES = {'--panel', '--mensajes', '--banner'}
+
 def _acquire_instance_lock():
-    """Bloquea si ya hay una instancia corriendo. Retorna el lock o sale."""
+    """Adquiere lock de instancia única. Solo aplica al modo background/default."""
+    # Subprocesos auxiliares no necesitan lock
+    if any(m in sys.argv for m in _SUBPROC_MODES):
+        return None
+
     if _IS_WIN:
         import ctypes
         _mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "CPMMonitor_SingleInstance")
         if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
             sys.exit(0)
-        return _mutex  # mantener referencia para que no se libere
+        return _mutex
     else:
         import fcntl
         _data_dir = os.path.join(os.path.expanduser("~"), "Library", "Application Support", "CPMTracks")
@@ -30,7 +38,7 @@ def _acquire_instance_lock():
             fcntl.flock(_lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
             _lf.write(str(os.getpid()))
             _lf.flush()
-            return _lf  # mantener referencia viva
+            return _lf
         except (IOError, OSError):
             sys.exit(0)
 
