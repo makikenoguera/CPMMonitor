@@ -2,20 +2,30 @@
 CPM Tracks - Scanner de fuentes de audio
 Detecta reproducciones en Spotify, Apple Music, QuickTime, VLC y YouTube/Chrome.
 Retorna dict con fuente, contenido, duracion_seg, isrc o None si no hay nada.
+
+── Estrategia sin micrófono ─────────────────────────────────────────────────
+  Spotify / Apple Music  → AppleScript → ISRC via MusicBrainz
+  YouTube (Chrome/Safari)→ título de pestaña → parse "Artista - Título"
+                           → ISRC via MusicBrainz (caché, sin repetir búsqueda)
+  ACRCloud               → desactivado del scan automático (requiere micrófono)
+─────────────────────────────────────────────────────────────────────────────
 """
 import subprocess
 import logging
 import re
-import time
 
 log = logging.getLogger("scanner")
 
 # Regex para limpiar prefijos de notificación de browser: "(206) Título" → "Título"
 _RE_NOTIF = re.compile(r'^\(\d+\)\s*')
 
-# Throttle para ACRCloud: mínimo 30s entre llamadas (graba 10s de audio)
-_acrcloud_last_call: float = 0.0
-_ACRCLOUD_MIN_INTERVAL = 30.0
+# Sufijos comunes en títulos de YouTube que no son parte del nombre de la canción
+_RE_YT_SUFFIX = re.compile(
+    r'\s*[\(\[](Official\s*(Video|Audio|Music\s*Video|Lyric\s*Video|Clip)|'
+    r'Video\s*Oficial|Letra|Lyrics|HD|4K|HQ|En\s*Vivo|Live|Visualizer|'
+    r'Lyric\s*Video|Performance\s*Video)[\)\]]\s*',
+    re.IGNORECASE
+)
 
 
 def _osascript(script, timeout=2):
@@ -158,6 +168,49 @@ def _scan_vlc():
         return None
 
 
+def _parse_youtube_title(raw_title: str) -> dict:
+    """
+    Parsea un título de YouTube y busca ISRC en MusicBrainz.
+
+    Patrones soportados:
+      "KAROL G - PROVENZA (Official Video)"  → artista=KAROL G, titulo=PROVENZA
+      "PROVENZA - KAROL G"                   → artista=KAROL G, titulo=PROVENZA
+      "PROVENZA"                             → solo titulo, sin artista
+
+    Retorna dict con contenido, artista, titulo, isrc.
+    """
+    # 1. Limpiar sufijos de YouTube y notificaciones
+    clean = _RE_NOTIF.sub('', raw_title)
+    clean = _RE_YT_SUFFIX.sub('', clean).strip()
+
+    artista = ""
+    titulo  = clean
+    isrc    = "N/A"
+
+    # 2. Intentar split "Artista - Título"
+    if " - " in clean:
+        parts   = clean.split(" - ", 1)
+        artista = parts[0].strip()
+        titulo  = parts[1].strip()
+
+    # 3. Buscar ISRC en MusicBrainz (caché → solo 1 petición por canción)
+    if artista and titulo:
+        try:
+            from core.musicbrainz_api import get_isrc as mb_isrc
+            found = mb_isrc(artista, titulo)
+            if found:
+                isrc = found
+        except Exception:
+            pass
+
+    return {
+        "contenido": clean,          # título limpio completo (para mostrar)
+        "artista":   artista,
+        "titulo":    titulo,
+        "isrc":      isrc,
+    }
+
+
 def _scan_youtube_chrome():
     script = '''
     tell application "System Events"
@@ -172,14 +225,10 @@ def _scan_youtube_chrome():
     if not res:
         return None
     if "YouTube" in res and res != "YouTube":
-        titulo = _RE_NOTIF.sub('', res.replace(" - YouTube", "").strip())
-        if titulo:
-            return {
-                "fuente":       "YouTube",
-                "contenido":    titulo,
-                "duracion_seg": 0,
-                "isrc":         "N/A",
-            }
+        raw = res.replace(" - YouTube", "").strip()
+        if raw:
+            info = _parse_youtube_title(raw)
+            return {"fuente": "YouTube", "duracion_seg": 0, **info}
     return None
 
 
@@ -197,47 +246,26 @@ def _scan_youtube_safari():
     if not res:
         return None
     if "YouTube" in res and res != "YouTube":
-        titulo = _RE_NOTIF.sub('', res.replace(" - YouTube", "").strip())
-        if titulo:
-            return {
-                "fuente":       "YouTube (Safari)",
-                "contenido":    titulo,
-                "duracion_seg": 0,
-                "isrc":         "N/A",
-            }
+        raw = res.replace(" - YouTube", "").strip()
+        if raw:
+            info = _parse_youtube_title(raw)
+            return {"fuente": "YouTube (Safari)", "duracion_seg": 0, **info}
     return None
 
 
-def _scan_acrcloud():
-    """
-    Scanner de audio por huella acústica vía ACRCloud.
-    - Solo se activa si ningún otro scanner detectó nada (último en prioridad).
-    - Mínimo 30 segundos entre llamadas para no saturar el micrófono.
-    - Solo si ACRCloud está configurado en config.json.
-    """
-    global _acrcloud_last_call
-    now = time.time()
-    if now - _acrcloud_last_call < _ACRCLOUD_MIN_INTERVAL:
-        return None
-    try:
-        from core.config import cargar
-        cfg = cargar()
-        if not cfg.get("acrcloud_key"):
-            return None
-    except Exception:
-        return None
+# ACRCloud disponible como función standalone (para botón manual futuro)
+# NO incluido en _SCANNERS — requiere micrófono, intrusivo para el usuario
+def identify_with_acrcloud(duration: int = 10):
+    """Identificación manual por huella acústica. No se llama automáticamente."""
     try:
         from core.acrcloud_api import identify_system_audio
-        _acrcloud_last_call = now
-        return identify_system_audio(duration=10)
+        return identify_system_audio(duration=duration)
     except Exception as e:
-        log.debug(f"ACRCloud scanner error: {e}")
+        log.debug(f"ACRCloud manual error: {e}")
         return None
 
 
-# Orden de prioridad:
-#   1-4. Scanners rápidos (AppleScript, sin audio)  → respuesta instantánea
-#   5.   ACRCloud (audio fingerprint, 10s grabación) → solo si los demás fallan
+# Orden de prioridad — todos sin micrófono, respuesta instantánea
 _SCANNERS = [
     _scan_spotify,
     _scan_apple_music,
@@ -245,7 +273,6 @@ _SCANNERS = [
     _scan_vlc,
     _scan_youtube_chrome,
     _scan_youtube_safari,
-    _scan_acrcloud,      # ← último: usa micrófono, costoso
 ]
 
 
