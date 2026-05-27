@@ -130,18 +130,18 @@ html,body{background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-
     <span class="logo-monitor">MONITOR</span>
   </div>
   <div class="header-title">Plan de Trabajo · Diagrama de Gantt</div>
-  <div class="milestone-badge">🏁 v4.4 STABLE — 27 Mayo 2026</div>
+  <div class="milestone-badge">🏁 v4.5 STABLE — 27 Mayo 2026</div>
 </div>
 
 <div class="container">
 
   <!-- STATS -->
   <div class="stats">
-    <div class="stat"><div class="stat-val c-ok">43</div><div class="stat-label">Tareas completadas</div></div>
+    <div class="stat"><div class="stat-val c-ok">45</div><div class="stat-label">Tareas completadas</div></div>
     <div class="stat"><div class="stat-val c-accent">1</div><div class="stat-label">En progreso</div></div>
-    <div class="stat"><div class="stat-val c-warn">9</div><div class="stat-label">Pendientes</div></div>
+    <div class="stat"><div class="stat-val c-warn">7</div><div class="stat-label">Pendientes</div></div>
     <div class="stat"><div class="stat-val" style="color:var(--dim)">4</div><div class="stat-label">Fases planificadas</div></div>
-    <div class="stat"><div class="stat-val c-ok">v4.4</div><div class="stat-label">Versión estable actual</div></div>
+    <div class="stat"><div class="stat-val c-ok">v4.5</div><div class="stat-label">Versión estable actual</div></div>
     <div class="stat"><div class="stat-val" style="color:#7B61FF">v5.0</div><div class="stat-label">Versión objetivo</div></div>
   </div>
 
@@ -642,8 +642,8 @@ html,body{background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-
       <div class="task-label">
         <span class="task-num">25</span>
         <span class="task-icon">⚡</span>
-        <span class="task-name">Lógica cotejo en /v1/plays<small>Match por ISRC → fuzzy artista+título</small></span>
-        <span class="task-status"><div class="dot-pending"></div></span>
+        <span class="task-name">Lógica cotejo en /v1/plays<small>ISRC vs catalogo_cpm → es_cpm=1 + valor_cpm</small></span>
+        <span class="task-status"><div class="dot-done"></div></span>
       </div>
       <div class="task-timeline">
         <div class="month-grid">
@@ -651,8 +651,8 @@ html,body{background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-
           <div class="month-col"></div><div class="month-col"></div><div class="month-col"></div>
           <div class="month-col"></div><div class="month-col"></div>
         </div>
-        <div class="today-line" style="left:33%"></div>
-        <div class="bar bar-pending" style="left:49%;width:9%">matching API</div>
+        <div class="today-line" style="left:36%"></div>
+        <div class="bar bar-done" style="left:30%;width:7%">✓ matching API</div>
       </div>
     </div>
 
@@ -896,7 +896,26 @@ html,body{background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-
     <div class="note">
       <div class="note-title" style="color:var(--ok)">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Completado al 26 Mayo 2026
+        Sesión v4.5 — 27 Mayo 2026
+      </div>
+      <ul>
+        <li class="done-item">Task 24 corregido — catálogo CPM funcional end-to-end (render, filtro, Desactivar/Activar/Eliminar)</li>
+        <li class="done-item">Task 25 — ISRC vs catalogo_cpm en /v1/plays → es_cpm=1 + valor_cpm</li>
+        <li class="done-item">Sync ahora envía porcentaje + segundos_escuchados al VPS</li>
+        <li class="done-item">Logo CPM Tracks — diseño con ecualizador igual al dashboard web</li>
+        <li class="done-item">YouTube: elimina prefijo (N) de notificaciones del browser</li>
+        <li class="done-item">YouTube: parser "Artista - Título" + ISRC via MusicBrainz (sin micrófono)</li>
+        <li class="done-item">ACRCloud eliminado del scan automático — solo función manual futura</li>
+        <li class="done-item">Mínimo 15s de escucha antes de guardar play (anti scroll-rápido)</li>
+        <li class="done-item">Fix instance lock — panel y mensajes ya abren desde el menú</li>
+        <li class="done-item">% reproducido correcto para fuentes sin duración (YouTube = 3:30 estimado)</li>
+      </ul>
+    </div>
+
+    <div class="note">
+      <div class="note-title" style="color:var(--ok)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Completado al 26 Mayo 2026 (v4.4)
       </div>
       <ul>
         <li class="done-item">App macOS estable en producción</li>
@@ -913,12 +932,12 @@ html,body{background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-
     <div class="note">
       <div class="note-title" style="color:var(--bad)">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3.5M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Fixes críticos — hacer primero
+        Pendientes prioritarios
       </div>
       <ul>
+        <li class="warn-item">Task 26 — KPIs plays CPM vs estadístico en dashboard</li>
         <li class="warn-item">Confirmar sync Windows con Nelson (E2E)</li>
-        <li class="warn-item">Mutex instancia única (doble proceso)</li>
-        <li class="warn-item">SSL verification — CERT_NONE es inseguro</li>
+        <li class="warn-item">SSL verification — CERT_NONE es inseguro (Task 20)</li>
         <li class="warn-item">Expiración de sesiones en API</li>
         <li class="warn-item">Backup automático SQLite en VPS</li>
       </ul>
