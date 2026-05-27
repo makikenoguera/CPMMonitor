@@ -1561,7 +1561,7 @@ async function loadAdminCatalogo(){
   try{
     const r=await fetch(`${API}/admin/catalogo`,{headers:authHeader()});
     const d=await r.json();
-    _adminCatalogoData=d.canciones||[];
+    _adminCatalogoData=Array.isArray(d)?d:(d.canciones||[]);
     _renderAdminCatalogo();
   }catch(e){document.getElementById('admin-catalogo-tbody').innerHTML='<tr><td colspan="7" class="empty">Error cargando</td></tr>';}
 }
