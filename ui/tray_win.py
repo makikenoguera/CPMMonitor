@@ -11,16 +11,10 @@ import subprocess
 
 log = logging.getLogger("tray_win")
 
-try:
-    from PyQt5.QtWidgets import (QApplication, QSystemTrayIcon, QMenu,
-                                  QAction, QMessageBox)
-    from PyQt5.QtGui import QIcon, QPixmap, QColor, QPainter
-    from PyQt5.QtCore import QTimer, Qt
-except ImportError:
-    from PyQt6.QtWidgets import (QApplication, QSystemTrayIcon, QMenu,
-                                  QAction, QMessageBox)
-    from PyQt6.QtGui import QIcon, QPixmap, QColor, QPainter
-    from PyQt6.QtCore import QTimer, Qt
+from PyQt5.QtWidgets import (QApplication, QSystemTrayIcon, QMenu,
+                              QAction, QMessageBox)
+from PyQt5.QtGui import QIcon, QPixmap, QColor, QPainter
+from PyQt5.QtCore import QTimer, Qt
 
 from core import database, config, autostart
 from core.sync import SyncEngine
