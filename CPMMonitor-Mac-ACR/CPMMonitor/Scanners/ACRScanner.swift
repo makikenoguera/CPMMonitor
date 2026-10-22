@@ -108,8 +108,15 @@ class ACRScanner: ObservableObject {
         let playing = rms > audioThreshold
 
         if playing && !wasPlayingAudio {
-            print("[ACR] Audio detectado (RMS: \(String(format: "%.4f", rms))), consultando en 2s…")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            // Nuevo audio detectado tras silencio.
+            // 1. Limpiar buffer: descarta audio previo (ruido del sistema, canción anterior)
+            //    para que el fingerprint use SOLO la canción que acaba de empezar.
+            audioCapture.clearBuffer()
+            // 2. Esperar 10s antes de consultar: necesitamos al menos ese tiempo
+            //    para llenar el buffer con audio limpio de la canción actual.
+            //    Con 2s de delay anterior, el fingerprint incluía 8s de audio viejo.
+            print("[ACR] Audio detectado (RMS: \(String(format: "%.4f", rms))), esperando 10s para capturar fingerprint limpio…")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
                 self?.triggerQuery(reason: "audio_started")
             }
         } else if !playing && wasPlayingAudio {

@@ -29,6 +29,16 @@ class AudioCaptureManager: NSObject, ObservableObject {
 
     private override init() {}
 
+    /// Vacía el buffer PCM circular.
+    /// Llamar al detectar el inicio de una nueva sesión de audio para evitar
+    /// que el fingerprint incluya audio previo (ruido del sistema, canción anterior).
+    func clearBuffer() {
+        bufferLock.lock()
+        pcmBuffer.removeAll()
+        bufferLock.unlock()
+        print("[Audio] Buffer limpiado — nueva sesión de captura")
+    }
+
     // MARK: - Permisos
 
     /// true si TCC ya tiene el permiso concedido pero el proceso actual
