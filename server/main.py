@@ -207,14 +207,20 @@ def _sliding_score(query: np.ndarray, ref: np.ndarray) -> float:
     """
     Busca la mejor alineación de `query` dentro de `ref` mediante ventana deslizante.
     Retorna similaridad 0-1 (1 = idéntico).
+
+    Para clips cortos (10s ≈ 59 valores frente a canción completa ≈ 900+):
+    - step pequeño = más posiciones revisadas = mejor alineación
+    - step = qlen//3 sólo revisaba ~3 posiciones → fácil perder el encaje real
     """
     qlen = len(query)
     rlen = len(ref)
     if qlen == 0 or rlen == 0:
         return 0.0
 
-    best = 0.0
-    step = max(1, qlen // 3)          # saltar 1/3 de la query por paso → ~3 candidatos por porción
+    best  = 0.0
+    # Paso fino: revisar cada posición si el fingerprint es corto (<120 valores),
+    # o cada qlen//8 posiciones si es largo. Compromiso velocidad/exhaustividad.
+    step  = 1 if qlen < 120 else max(1, qlen // 8)
     limit = max(1, rlen - qlen + 1)
 
     for offset in range(0, limit, step):
@@ -228,7 +234,7 @@ def _sliding_score(query: np.ndarray, ref: np.ndarray) -> float:
         score      = 1.0 - diff_bits / total_bits
         if score > best:
             best = score
-            if best > 0.90:           # suficientemente bueno → salir temprano
+            if best > 0.92:           # excelente → salir temprano
                 break
 
     return best
@@ -270,10 +276,16 @@ def load_fp_index():
         log.error(f"[FP Index] Error cargando índice: {e}")
 
 
-def search_by_fingerprint(query_fp: str, threshold: float = 0.55) -> Optional[dict]:
+def search_by_fingerprint(query_fp: str, threshold: float = 0.70) -> Optional[dict]:
     """
     Busca en el índice local de fingerprints.
     Retorna el track con mayor similaridad si supera `threshold`.
+
+    Threshold 0.70: empírico para Chromaprint de 10s vs canción completa.
+    - <0.50  → azar (flip de moneda para bits binarios)
+    - 0.55   → umbral anterior, generaba muchos falsos positivos
+    - 0.70   → mínimo para considerar un match confiable en clips cortos
+    - >0.85  → match casi seguro
     """
     if not _fp_index:
         return None
