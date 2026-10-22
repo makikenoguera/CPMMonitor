@@ -35,36 +35,37 @@ class AudioCaptureManager: NSObject, ObservableObject {
     /// aún no puede usar SCShareableContent (necesita reinicio).
     @Published var needsRestart: Bool = false
 
+    /// Comprueba el permiso SIN mostrar ningún diálogo del sistema.
+    /// Llama CGPreflightScreenCaptureAccess() primero (respuesta instantánea).
+    /// Si TCC dice sí pero SCShareableContent falla, activa needsRestart.
     func checkPermission() async -> Bool {
-        // Fast-path: consultar TCC sin levantar ningún diálogo.
-        // Retorna true en cuanto el usuario concede el permiso en Ajustes,
-        // incluso si SCShareableContent aún no lo refleja en este proceso.
+        // TCC fast-path: si el permiso ya está concedido en Ajustes, lo detectamos aquí.
         if CGPreflightScreenCaptureAccess() {
-            await MainActor.run {
-                permissionStatus = .granted
-                needsRestart = false
-            }
+            await MainActor.run { permissionStatus = .granted; needsRestart = false }
             return true
         }
-
+        // Fallback: intentar el acceso real a contenido compartido.
         do {
             _ = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
             await MainActor.run { permissionStatus = .granted; needsRestart = false }
             return true
         } catch {
-            // Solicitar al sistema que muestre el diálogo de permiso (si aún no está concedido).
-            let alreadyGranted = CGRequestScreenCaptureAccess()
-            await MainActor.run {
-                if alreadyGranted {
-                    // Permiso en TCC pero SCShareableContent falla — requiere reiniciar la app.
-                    permissionStatus = .denied
-                    needsRestart = true
-                } else {
-                    permissionStatus = .denied
-                    needsRestart = false
-                }
-            }
+            // NO llamamos CGRequestScreenCaptureAccess() aquí — eso causaría un diálogo
+            // automático en cada lanzamiento. El diálogo se muestra sólo cuando el usuario
+            // pulsa «Solicitar permiso» explícitamente (ver requestPermission()).
+            await MainActor.run { permissionStatus = .denied; needsRestart = false }
             return false
+        }
+    }
+
+    /// Muestra el diálogo del sistema para solicitar el permiso.
+    /// Llamar solo cuando el usuario pulsa el botón «Solicitar permiso».
+    /// Después de que el usuario acepte debe pulsar «Reintentar» para iniciar la captura.
+    func requestPermission() {
+        CGRequestScreenCaptureAccess()
+        // Esperar un momento y luego re-verificar el estado
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            Task { await self?.checkPermission() }
         }
     }
 

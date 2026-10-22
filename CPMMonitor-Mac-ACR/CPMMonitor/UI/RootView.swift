@@ -7,15 +7,17 @@ struct RootView: View {
 
     var body: some View {
         let accentCeleste = Color(red: 0.23, green: 0.72, blue: 0.82)
-        let bgCeleste     = Color(red: 0.94, green: 0.98, blue: 0.98)
         if config.isActivated {
             ContentView()
                 .accentColor(accentCeleste)
                 .tint(accentCeleste)
+                // Fondo adaptativo: oscuro en dark mode, claro en light mode
+                .background(Color(NSColor.windowBackgroundColor))
         } else {
             SetupView()
                 .accentColor(accentCeleste)
                 .tint(accentCeleste)
+                .background(Color(NSColor.windowBackgroundColor))
         }
     }
 }

@@ -24,8 +24,11 @@ class PanelController: NSObject {
         panel.hidesOnDeactivate = false
         panel.level           = .floating
         panel.delegate        = self
-        // Respetar apariencia del sistema (dark/light mode según macOS).
-        // Los colores de la UI se definen explícitamente en ContentView/SumarteRedTheme.
+        // Fondo transparente: deja que NSHostingView / SwiftUI pinte su propio fondo.
+        // Color(NSColor.windowBackgroundColor) en RootView se encarga del color correcto
+        // tanto en dark mode como en light mode.
+        panel.backgroundColor = .clear
+        panel.isOpaque        = false
         self.window = panel
     }
 

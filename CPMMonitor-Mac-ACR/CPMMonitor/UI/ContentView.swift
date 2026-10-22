@@ -333,17 +333,17 @@ struct ContentView: View {
                         }
                         Spacer()
                         if audio.needsRestart {
-                            // TCC dice concedido pero el proceso actual no lo puede usar → reiniciar.
                             Button("Reiniciar app") { audio.relaunchApp() }
                                 .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.orange)
-                        } else if audio.permissionStatus != .granted {
-                            Button(audio.permissionStatus == .denied ? "Reintentar" : "Solicitar permiso") {
-                                ACRScanner.shared.start()
-                            }
-                            .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.accentColor)
-                        }
-                        if audio.permissionStatus == .denied && !audio.needsRestart {
-                            Button("Abrir Ajustes") { audio.openPrivacySettings() }
+                        } else if audio.permissionStatus == .unknown {
+                            // Primera vez: pedir permiso al usuario vía diálogo del sistema
+                            Button("Solicitar permiso") { audio.requestPermission() }
+                                .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.accentColor)
+                        } else if audio.permissionStatus == .denied {
+                            // Ya se pidió antes — el usuario puede reintentarlo o ir a Ajustes
+                            Button("Reintentar") { ACRScanner.shared.start() }
+                                .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.accentColor)
+                            Button("Ajustes") { audio.openPrivacySettings() }
                                 .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.orange)
                         }
                     }
