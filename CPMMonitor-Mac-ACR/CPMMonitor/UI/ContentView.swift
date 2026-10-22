@@ -342,7 +342,10 @@ struct ContentView: View {
                             Button("Solicitar permiso") { audio.requestPermissionAndStart() }
                                 .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.accentColor)
                         } else if audio.permissionStatus == .denied {
-                            Button("Reintentar") { ACRScanner.shared.start() }
+                            // Reintentar siempre pasa por CGRequestScreenCaptureAccess()
+                            // — en macOS 14/15 eso es lo único que puede mostrar el diálogo
+                            // o verificar silenciosamente si el toggle ya está ON.
+                            Button("Reintentar") { audio.requestPermissionAndStart() }
                                 .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.accentColor)
                             Button("Ajustes") { audio.openPrivacySettings() }
                                 .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.orange)
