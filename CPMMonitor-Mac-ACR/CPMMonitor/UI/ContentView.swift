@@ -44,6 +44,9 @@ struct ContentView: View {
             Spacer(minLength: 0)
         }
         .frame(width: 460, height: 640)
+        // Fondo oscuro explícito — sin esto el NSPanel muestra blanco aunque
+        // tenga appearance .darkAqua, porque NSHostingView es transparente por defecto.
+        .background(Color(red: 0.11, green: 0.11, blue: 0.13))
         .onAppear {
             loadHistory()
             startRefresh()

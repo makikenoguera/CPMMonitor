@@ -56,11 +56,12 @@ class ACRScanner: ObservableObject {
         guard !isListening else { return }
 
         Task {
-            let ok = await audioCapture.checkPermission()
-            guard ok else {
-                print("[ACR] Sin permiso de Screen Recording — no se puede capturar audio")
-                return
-            }
+            // Ir directo a startCapture() sin checkPermission() previo.
+            // SCShareableContent resuelve el permiso internamente:
+            //   - Si está concedido: funciona silenciosamente ✅
+            //   - Si no está concedido: lanza un error (macOS 14+) o muestra el
+            //     diálogo del sistema una sola vez (macOS 13).
+            // Llamar checkPermission() antes causaba un segundo diálogo duplicado.
             do {
                 try await audioCapture.startCapture()
                 await MainActor.run {
@@ -70,6 +71,10 @@ class ACRScanner: ObservableObject {
                 }
             } catch {
                 print("[ACR] Error iniciando captura: \(error)")
+                await MainActor.run {
+                    // Marcar como denegado para que la UI muestre el botón correcto
+                    AudioCaptureManager.shared.permissionStatus = .denied
+                }
             }
         }
     }
