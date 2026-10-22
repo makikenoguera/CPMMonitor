@@ -332,13 +332,17 @@ struct ContentView: View {
                                 .foregroundColor(audio.isCapturing ? .green : .orange)
                         }
                         Spacer()
-                        if audio.permissionStatus != .granted {
+                        if audio.needsRestart {
+                            // TCC dice concedido pero el proceso actual no lo puede usar → reiniciar.
+                            Button("Reiniciar app") { audio.relaunchApp() }
+                                .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.orange)
+                        } else if audio.permissionStatus != .granted {
                             Button(audio.permissionStatus == .denied ? "Reintentar" : "Solicitar permiso") {
                                 ACRScanner.shared.start()
                             }
                             .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.accentColor)
                         }
-                        if audio.permissionStatus == .denied {
+                        if audio.permissionStatus == .denied && !audio.needsRestart {
                             Button("Abrir Ajustes") { audio.openPrivacySettings() }
                                 .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.orange)
                         }
@@ -418,8 +422,11 @@ struct ContentView: View {
 
     // MARK: - Helpers
     private var permissionLabel: String {
+        if audio.needsRestart {
+            return "Permiso concedido — reinicia la app para activar la captura"
+        }
         switch audio.permissionStatus {
-        case .unknown:  return "Permiso no solicitado — toca «Solicitar permiso»"
+        case .unknown:  return "Permiso no solicitado — pulsa «Solicitar permiso»"
         case .denied:   return "Denegado — Ajustes → Privacidad → Grabación de pantalla"
         case .granted:  return "Concedido"
         }

@@ -24,9 +24,8 @@ class PanelController: NSObject {
         panel.hidesOnDeactivate = false
         panel.level           = .floating
         panel.delegate        = self
-        // Forzar apariencia clara: el diseño usa fondo celeste claro con texto oscuro
-        // y no está pensado para dark mode. Esto afecta tanto a SwiftUI como a controles nativos.
-        panel.appearance      = NSAppearance(named: .aqua)
+        // Respetar apariencia del sistema (dark/light mode según macOS).
+        // Los colores de la UI se definen explícitamente en ContentView/SumarteRedTheme.
         self.window = panel
     }
 

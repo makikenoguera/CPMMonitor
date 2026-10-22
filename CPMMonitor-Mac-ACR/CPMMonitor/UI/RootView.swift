@@ -10,16 +10,12 @@ struct RootView: View {
         let bgCeleste     = Color(red: 0.94, green: 0.98, blue: 0.98)
         if config.isActivated {
             ContentView()
-                .background(bgCeleste)
                 .accentColor(accentCeleste)
                 .tint(accentCeleste)
-                .colorScheme(.light)
         } else {
             SetupView()
-                .background(bgCeleste)
                 .accentColor(accentCeleste)
                 .tint(accentCeleste)
-                .colorScheme(.light)
         }
     }
 }
