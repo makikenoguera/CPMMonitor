@@ -36,36 +36,46 @@ class AudioCaptureManager: NSObject, ObservableObject {
     @Published var needsRestart: Bool = false
 
     /// Comprueba el permiso SIN mostrar ningún diálogo del sistema.
-    /// Llama CGPreflightScreenCaptureAccess() primero (respuesta instantánea).
-    /// Si TCC dice sí pero SCShareableContent falla, activa needsRestart.
+    /// Usa CGPreflightScreenCaptureAccess() como fast-path. Si eso falla,
+    /// intenta SCShareableContent (que en macOS 13 muestra el diálogo una vez,
+    /// en 14+ solo lanza un error). Nunca llama CGRequestScreenCaptureAccess()
+    /// automáticamente — eso causaba el diálogo en cada arranque.
     func checkPermission() async -> Bool {
-        // TCC fast-path: si el permiso ya está concedido en Ajustes, lo detectamos aquí.
+        // Fast-path via TCC
         if CGPreflightScreenCaptureAccess() {
             await MainActor.run { permissionStatus = .granted; needsRestart = false }
             return true
         }
-        // Fallback: intentar el acceso real a contenido compartido.
+        // Intentar acceso real; en macOS 14+ ya no muestra diálogo automático
         do {
             _ = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
             await MainActor.run { permissionStatus = .granted; needsRestart = false }
             return true
         } catch {
-            // NO llamamos CGRequestScreenCaptureAccess() aquí — eso causaría un diálogo
-            // automático en cada lanzamiento. El diálogo se muestra sólo cuando el usuario
-            // pulsa «Solicitar permiso» explícitamente (ver requestPermission()).
             await MainActor.run { permissionStatus = .denied; needsRestart = false }
             return false
         }
     }
 
-    /// Muestra el diálogo del sistema para solicitar el permiso.
-    /// Llamar solo cuando el usuario pulsa el botón «Solicitar permiso».
-    /// Después de que el usuario acepte debe pulsar «Reintentar» para iniciar la captura.
-    func requestPermission() {
+    /// Muestra el diálogo del sistema. Llamar SOLO cuando el usuario pulsa «Solicitar permiso».
+    /// Tras aceptar, la app intentará iniciar la captura automáticamente.
+    func requestPermissionAndStart() {
+        // Pedir permiso al sistema — en macOS 15 esto abre un diálogo
         CGRequestScreenCaptureAccess()
-        // Esperar un momento y luego re-verificar el estado
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            Task { await self?.checkPermission() }
+        // Reintentar después de que el usuario tenga tiempo de aceptar
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard let self else { return }
+            Task {
+                let ok = await self.checkPermission()
+                if ok {
+                    // Permiso concedido — iniciar captura directamente
+                    do {
+                        try await self.startCapture()
+                    } catch {
+                        print("[Audio] Error al iniciar captura tras permiso: \(error)")
+                    }
+                }
+            }
         }
     }
 

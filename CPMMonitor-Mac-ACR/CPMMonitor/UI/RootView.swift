@@ -11,13 +11,10 @@ struct RootView: View {
             ContentView()
                 .accentColor(accentCeleste)
                 .tint(accentCeleste)
-                // Fondo adaptativo: oscuro en dark mode, claro en light mode
-                .background(Color(NSColor.windowBackgroundColor))
         } else {
             SetupView()
                 .accentColor(accentCeleste)
                 .tint(accentCeleste)
-                .background(Color(NSColor.windowBackgroundColor))
         }
     }
 }

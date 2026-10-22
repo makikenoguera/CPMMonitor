@@ -336,11 +336,9 @@ struct ContentView: View {
                             Button("Reiniciar app") { audio.relaunchApp() }
                                 .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.orange)
                         } else if audio.permissionStatus == .unknown {
-                            // Primera vez: pedir permiso al usuario vía diálogo del sistema
-                            Button("Solicitar permiso") { audio.requestPermission() }
+                            Button("Solicitar permiso") { audio.requestPermissionAndStart() }
                                 .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.accentColor)
                         } else if audio.permissionStatus == .denied {
-                            // Ya se pidió antes — el usuario puede reintentarlo o ir a Ajustes
                             Button("Reintentar") { ACRScanner.shared.start() }
                                 .font(.system(size: 11)).buttonStyle(.plain).foregroundColor(.accentColor)
                             Button("Ajustes") { audio.openPrivacySettings() }

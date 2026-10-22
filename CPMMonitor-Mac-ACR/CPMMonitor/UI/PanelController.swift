@@ -24,11 +24,10 @@ class PanelController: NSObject {
         panel.hidesOnDeactivate = false
         panel.level           = .floating
         panel.delegate        = self
-        // Fondo transparente: deja que NSHostingView / SwiftUI pinte su propio fondo.
-        // Color(NSColor.windowBackgroundColor) en RootView se encarga del color correcto
-        // tanto en dark mode como en light mode.
-        panel.backgroundColor = .clear
-        panel.isOpaque        = false
+        // Forzar dark mode en el panel — el diseño (cards oscuras, header celeste,
+        // texto blanco) está pensado para dark. NSColor adaptativos (controlBackground,
+        // secondary, etc.) se resuelven en sus variantes oscuras con .darkAqua.
+        panel.appearance = NSAppearance(named: .darkAqua)
         self.window = panel
     }
 
