@@ -18,10 +18,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Instancia única: si ya hay una copia corriendo, activarla y terminar esta.
         let bundleId = Bundle.main.bundleIdentifier ?? ""
+        let current = NSRunningApplication.current
         let others = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId)
-            .filter { !$0.isCurrentApplication }
+            .filter { $0 != current }
         if !others.isEmpty {
-            others.first?.activate(options: .activateIgnoringOtherApps)
+            others.first?.activate(options: NSApplication.ActivationOptions(rawValue: 0))
             NSApp.terminate(nil)
         }
     }

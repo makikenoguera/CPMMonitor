@@ -1,14 +1,5 @@
 import SwiftUI
 
-// MARK: - Colores corporativos SumarteRed
-// Definidos aquí porque SumarteRedTheme.swift no está en el build target.
-enum SRColor {
-    static let celeste     = Color(red: 0.23, green: 0.72, blue: 0.82)
-    static let celesteDark = Color(red: 0.17, green: 0.58, blue: 0.68)
-    static let background  = Color(red: 0.94, green: 0.98, blue: 0.98)
-    static let headerBg    = Color(red: 0.15, green: 0.62, blue: 0.74)
-}
-
 struct ContentView: View {
     @StateObject private var config  = ConfigManager.shared
     @StateObject private var scanner = ScannerManager.shared
