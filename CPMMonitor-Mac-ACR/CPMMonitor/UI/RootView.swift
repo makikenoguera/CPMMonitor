@@ -13,11 +13,13 @@ struct RootView: View {
                 .background(bgCeleste)
                 .accentColor(accentCeleste)
                 .tint(accentCeleste)
+                .colorScheme(.light)
         } else {
             SetupView()
                 .background(bgCeleste)
                 .accentColor(accentCeleste)
                 .tint(accentCeleste)
+                .colorScheme(.light)
         }
     }
 }
