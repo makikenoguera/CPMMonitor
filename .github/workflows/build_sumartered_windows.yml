@@ -1,0 +1,92 @@
+name: Build SumarteRed Monitor - Windows
+
+on:
+  push:
+    tags:
+      - 'win-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Instalar dependencias Python
+        working-directory: CPMMonitor-Windows
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Descargar fpcalc.exe (Chromaprint Windows)
+        working-directory: CPMMonitor-Windows
+        run: |
+          $url = "https://github.com/acoustid/chromaprint/releases/download/v1.5.1/chromaprint-fpcalc-1.5.1-windows-x86_64.zip"
+          Invoke-WebRequest -Uri $url -OutFile fpcalc.zip
+          Expand-Archive -Path fpcalc.zip -DestinationPath fpcalc_tmp
+          Copy-Item fpcalc_tmp\chromaprint-fpcalc-1.5.1-windows-x86_64\fpcalc.exe .
+          Remove-Item fpcalc.zip, fpcalc_tmp -Recurse -Force
+          Write-Host "fpcalc.exe descargado: $(Test-Path fpcalc.exe)"
+        shell: powershell
+
+      - name: Generar icono
+        working-directory: CPMMonitor-Windows
+        run: python generate_icon.py
+
+      - name: Compilar con PyInstaller
+        working-directory: CPMMonitor-Windows
+        run: pyinstaller build.spec --clean --noconfirm
+
+      - name: Instalar Inno Setup
+        run: choco install innosetup --no-progress -y
+        shell: powershell
+
+      - name: Crear instalador con Inno Setup
+        working-directory: CPMMonitor-Windows
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+        shell: powershell
+
+      - name: Subir instalador como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: SumarteRed-Monitor-Windows
+          path: CPMMonitor-Windows\Output\SumarteRedMonitor_Setup.exe
+          retention-days: 30
+
+      - name: Crear Release en GitHub
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: CPMMonitor-Windows\Output\SumarteRedMonitor_Setup.exe
+          name: SumarteRed Monitor ${{ github.ref_name }}
+          body: |
+            ## SumarteRed Monitor ${{ github.ref_name }} — Windows
+
+            ### Requisitos
+            - Windows 10 (1809) o superior
+            - Conexión a internet para primera sincronización del catálogo
+
+            ### Instalación
+            1. Descarga `SumarteRedMonitor_Setup.exe`
+            2. Ejecuta el instalador
+               - Si Windows SmartScreen lo bloquea: clic en **"Más información"** → **"Ejecutar de todas formas"**
+            3. Abre la app desde el menú Inicio o el acceso directo del escritorio
+            4. Haz clic derecho en el ícono de la bandeja del sistema → **Configuración**
+            5. Ingresa tu **Venue ID** y **API Key** y guarda
+
+            ### Novedades
+            - Captura de audio del sistema vía WASAPI loopback (sin micrófono)
+            - Catálogo local con matching de fingerprint sin internet
+            - Sincronización automática de plays al servidor
