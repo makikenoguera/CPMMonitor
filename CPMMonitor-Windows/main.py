@@ -36,7 +36,7 @@ def main() -> None:
     audio = AudioCaptureManager()
     scanner = ScannerManager(config, db, catalog, matcher, audio)
     sync = SyncManager(config, db)
-    tray = TrayUI(config, scanner, sync)
+    tray = TrayUI(config, scanner, sync, db)
 
     # Load catalog into matcher from local DB
     entries = catalog.load_all()
