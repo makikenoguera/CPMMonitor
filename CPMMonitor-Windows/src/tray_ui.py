@@ -128,7 +128,8 @@ class MonitorWindow:
         self._db      = db
 
         self._root: Optional[tk.Tk] = None
-        self._lock = threading.Lock()
+        self._lock   = threading.Lock()
+        self._thread: Optional[threading.Thread] = None   # guard against multiple windows
 
         # Tab state
         self._active_tab  = 1      # 0=Promovidas 1=Monitoreo 2=Ganancias
@@ -147,8 +148,9 @@ class MonitorWindow:
     # ── Public ────────────────────────────────────────────────────────────────
 
     def show(self) -> None:
-        """Open or bring the window to front."""
+        """Open or bring the window to front. Thread-safe — never opens duplicates."""
         with self._lock:
+            # Window already open → bring to front
             if self._root is not None:
                 try:
                     self._root.after(0, self._root.lift)
@@ -156,8 +158,14 @@ class MonitorWindow:
                     return
                 except Exception:
                     self._root = None
-        t = threading.Thread(target=self._run, daemon=True, name="MonitorWindow")
-        t.start()
+
+            # Thread already starting (root not assigned yet) → ignore
+            if self._thread is not None and self._thread.is_alive():
+                return
+
+            self._thread = threading.Thread(
+                target=self._run, daemon=True, name="MonitorWindow")
+            self._thread.start()
 
     # ── Window lifecycle ──────────────────────────────────────────────────────
 
@@ -168,11 +176,13 @@ class MonitorWindow:
             logger.error("MonitorWindow crashed: %s", exc, exc_info=True)
         finally:
             with self._lock:
-                self._root = None
+                self._root  = None
+                self._thread = None
 
     def _run_inner(self) -> None:
         root = tk.Tk()
-        self._root = root
+        with self._lock:
+            self._root = root   # assign inside lock so show() sees it immediately
         root.title(APP_NAME)
         root.geometry("580x680")
         root.minsize(520, 580)
@@ -212,8 +222,7 @@ class MonitorWindow:
 
         root.protocol("WM_DELETE_WINDOW", root.destroy)
         root.mainloop()
-        with self._lock:
-            self._root = None
+        # Cleanup handled by _run()'s finally block
 
     def _setup_styles(self, root):
         style = ttk.Style(root)
@@ -407,31 +416,43 @@ class MonitorWindow:
             return
         self._promos_loading = True
         self._promos_error = ""
-        if self._root:
-            self._root.after(0, lambda: self._promo_status.config(
-                text="Cargando promovidas…", fg=TEXT_LBL))
-        t = threading.Thread(target=self._fetch_promovidas_bg, daemon=True)
+        # Capture root at call time — background thread uses this snapshot
+        root_snap = self._root
+        if root_snap:
+            try:
+                root_snap.after(0, lambda: self._promo_status.config(
+                    text="Cargando promovidas…", fg=TEXT_LBL))
+            except Exception:
+                pass
+        t = threading.Thread(
+            target=self._fetch_promovidas_bg, args=(root_snap,), daemon=True)
         t.start()
 
-    def _fetch_promovidas_bg(self):
+    def _fetch_promovidas_bg(self, root_snap):
         import time
         import requests
         try:
             url  = f"{self._config.server_url}/v1/promovidas"
             hdrs = {"X-API-Key": self._config.api_key}
-            resp = requests.get(url, headers=hdrs, timeout=15)
+            logger.info("Promovidas fetch: %s", url)
+            resp = requests.get(url, headers=hdrs, timeout=12)
             resp.raise_for_status()
             data = resp.json()
-            self._promovidas     = [r for r in data if r.get("activa")]
-            self._promos_error   = ""
+            self._promovidas        = [r for r in data if r.get("activa")]
+            self._promos_error      = ""
             self._promos_last_fetch = time.time()
+            logger.info("Promovidas loaded: %d activas", len(self._promovidas))
         except Exception as e:
             self._promos_error = str(e)
             logger.warning("Promovidas fetch error: %s", e)
         finally:
             self._promos_loading = False
-            if self._root:
-                self._root.after(0, self._render_promovidas)
+            # Schedule UI update on the tk mainloop that was running when fetch started
+            try:
+                if root_snap and root_snap.winfo_exists():
+                    root_snap.after(0, self._render_promovidas)
+            except Exception:
+                pass
 
     def _render_promovidas(self):
         inner = self._promo_scroll.inner
