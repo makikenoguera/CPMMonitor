@@ -81,6 +81,10 @@ class MonitorWindow:
                  bg=BRAND_COLOR, fg=TEXT_WHITE,
                  font=('Segoe UI', 13, 'bold')).pack(side='left', padx=16, pady=10)
 
+        self._rms_lbl = tk.Label(header, text="", bg=BRAND_COLOR, fg=TEXT_WHITE,
+                                  font=('Segoe UI', 9))
+        self._rms_lbl.pack(side='right', padx=8)
+
         self._status_lbl = tk.Label(header, text="", bg=BRAND_COLOR, fg=TEXT_WHITE,
                                      font=('Segoe UI', 10))
         self._status_lbl.pack(side='right', padx=16)
@@ -127,16 +131,23 @@ class MonitorWindow:
         for i in range(3):
             stats_frame.columnconfigure(i, weight=1)
 
-        # ── History table ─────────────────────────────────────────────────────
-        tk.Label(root, text="Historial de reproducciones",
-                 bg=BG_DARK, fg=TEXT_LABEL,
-                 font=('Segoe UI', 9)).pack(anchor='w', padx=12, pady=(10, 2))
+        # ── Notebook: Historial + Promovidas ─────────────────────────────────
+        style.configure("TNotebook",            background=BG_DARK, borderwidth=0)
+        style.configure("TNotebook.Tab",        background=BG_CARD, foreground=TEXT_LABEL,
+                        font=('Segoe UI', 9, 'bold'), padding=[12, 4])
+        style.map("TNotebook.Tab",
+                  background=[('selected', BRAND_COLOR)],
+                  foreground=[('selected', TEXT_WHITE)])
 
-        table_frame = tk.Frame(root, bg=BG_DARK)
-        table_frame.pack(fill='both', expand=True, padx=10, pady=(0, 10))
+        nb = ttk.Notebook(root)
+        nb.pack(fill='both', expand=True, padx=10, pady=(8, 10))
+
+        # ── Tab 1: Historial ─────────────────────────────────────────────────
+        hist_frame = tk.Frame(nb, bg=BG_DARK)
+        nb.add(hist_frame, text='  Historial  ')
 
         cols = ('hora', 'cancion', 'pct', 'estado')
-        self._tree = ttk.Treeview(table_frame, columns=cols, show='headings', selectmode='none')
+        self._tree = ttk.Treeview(hist_frame, columns=cols, show='headings', selectmode='none')
 
         style.configure("Treeview",
                         background=BG_CARD, foreground=TEXT_WHITE,
@@ -157,15 +168,45 @@ class MonitorWindow:
         self._tree.column('pct',     width=55,  stretch=False, anchor='center')
         self._tree.column('estado',  width=120, stretch=False, anchor='center')
 
-        sb = ttk.Scrollbar(table_frame, orient='vertical', command=self._tree.yview)
-        self._tree.configure(yscrollcommand=sb.set)
+        sb1 = ttk.Scrollbar(hist_frame, orient='vertical', command=self._tree.yview)
+        self._tree.configure(yscrollcommand=sb1.set)
         self._tree.pack(side='left', fill='both', expand=True)
-        sb.pack(side='right', fill='y')
+        sb1.pack(side='right', fill='y')
 
-        # tag colors
         self._tree.tag_configure('paga',    foreground=GREEN)
         self._tree.tag_configure('catalog', foreground=YELLOW)
         self._tree.tag_configure('normal',  foreground=TEXT_LABEL)
+
+        # ── Tab 2: Promovidas ────────────────────────────────────────────────
+        prom_frame = tk.Frame(nb, bg=BG_DARK)
+        nb.add(prom_frame, text='  ⭐ Promovidas  ')
+
+        # Banner de conteo
+        prom_top = tk.Frame(prom_frame, bg=BG_CARD, pady=8, padx=16)
+        prom_top.pack(fill='x')
+        tk.Label(prom_top, text="⭐  PROMOVIDAS DETECTADAS HOY",
+                 bg=BG_CARD, fg=BRAND_COLOR,
+                 font=('Segoe UI', 9, 'bold')).pack(side='left')
+        self._prom_count_lbl = tk.Label(prom_top, text="0",
+                                         bg=BG_CARD, fg=TEXT_WHITE,
+                                         font=('Segoe UI', 14, 'bold'))
+        self._prom_count_lbl.pack(side='right', padx=8)
+
+        pcols = ('hora', 'cancion', 'pct')
+        self._prom_tree = ttk.Treeview(prom_frame, columns=pcols, show='headings', selectmode='none')
+        self._prom_tree.heading('hora',    text='Hora')
+        self._prom_tree.heading('cancion', text='Canción')
+        self._prom_tree.heading('pct',     text='%')
+        self._prom_tree.column('hora',    width=60,  stretch=False, anchor='center')
+        self._prom_tree.column('cancion', width=420, stretch=True)
+        self._prom_tree.column('pct',     width=60,  stretch=False, anchor='center')
+
+        sb2 = ttk.Scrollbar(prom_frame, orient='vertical', command=self._prom_tree.yview)
+        self._prom_tree.configure(yscrollcommand=sb2.set)
+        self._prom_tree.pack(side='left', fill='both', expand=True)
+        sb2.pack(side='right', fill='y')
+
+        self._prom_tree.tag_configure('prom', foreground=YELLOW)
 
         # ── Initial refresh ──────────────────────────────────────────────────
         self._do_refresh(root)
@@ -195,7 +236,7 @@ class MonitorWindow:
             root.after(3000, self._do_refresh, root)
 
     def _refresh_ui(self, root: tk.Tk) -> None:
-        # Status header
+        # Status header + RMS level
         if not self._config.is_activated:
             self._status_lbl.config(text="⚠ Sin configurar", fg=YELLOW)
         elif self._scanner.is_scanning:
@@ -203,11 +244,21 @@ class MonitorWindow:
         else:
             self._status_lbl.config(text="◼ Detenido", fg=TEXT_LABEL)
 
+        try:
+            rms = self._scanner.rms_level
+            bar = '█' * int(min(rms / 0.004, 1.0) * 8)
+            bar_text = f"🎙 {bar:<8} {rms:.4f}"
+            rms_color = GREEN if rms >= 0.004 else TEXT_LABEL
+            self._rms_lbl.config(text=bar_text, fg=rms_color)
+        except Exception:
+            pass
+
         # Now playing
         candidate = self._scanner.current_candidate
         if candidate:
             self._now_title.config(text=candidate.get('titulo', '—'))
-            self._now_sub.config(text=candidate.get('artista', ''))
+            prom_badge = " ⭐" if candidate.get('is_promovida') else ""
+            self._now_sub.config(text=candidate.get('artista', '') + prom_badge)
             pct = candidate.get('porcentaje', 0.0)
             self._now_pct.config(text=f"{pct:.0f}%")
             self._progress['value'] = min(pct, 100)
@@ -220,6 +271,7 @@ class MonitorWindow:
             self._progress['value'] = 0
 
         # Stats
+        plays = []
         try:
             plays = self._db.fetch_history(limit=200)
             today = datetime.date.today()
@@ -236,11 +288,11 @@ class MonitorWindow:
         # History table
         self._tree.delete(*self._tree.get_children())
         for p in plays[:50]:
-            hora   = _play_hora(p)
+            hora    = _play_hora(p)
             cancion = f"{p.get('artista','')} — {p.get('titulo','')}"
-            pct    = f"{p.get('porcentaje', 0):.0f}%"
-            paga   = p.get('in_catalog') and p.get('porcentaje', 0) >= 80
-            cat    = p.get('in_catalog') and not paga
+            pct     = f"{p.get('porcentaje', 0):.0f}%"
+            paga    = p.get('in_catalog') and p.get('porcentaje', 0) >= 80
+            cat     = p.get('in_catalog') and not paga
             if paga:
                 estado = "✅ Pagada"
                 tag    = 'paga'
@@ -251,6 +303,20 @@ class MonitorWindow:
                 estado = "○ No paga"
                 tag    = 'normal'
             self._tree.insert('', 'end', values=(hora, cancion, pct, estado), tags=(tag,))
+
+        # Promovidas table
+        try:
+            today = datetime.date.today()
+            promovidas = [p for p in plays if p.get('is_promovida') and _play_date(p) == today]
+            self._prom_count_lbl.config(text=str(len(promovidas)))
+            self._prom_tree.delete(*self._prom_tree.get_children())
+            for p in promovidas:
+                hora    = _play_hora(p)
+                cancion = f"⭐ {p.get('artista','')} — {p.get('titulo','')}"
+                pct     = f"{p.get('porcentaje', 0):.0f}%"
+                self._prom_tree.insert('', 'end', values=(hora, cancion, pct), tags=('prom',))
+        except Exception:
+            pass
 
 
 def _play_date(play: dict) -> datetime.date:

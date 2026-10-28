@@ -41,6 +41,9 @@ class ScannerManager:
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
 
+        # Debug / diagnostic
+        self._rms_log_counter: int = 0
+
         # Candidate state
         self._candidate: Optional[dict[str, Any]] = None
         self._pending_match: Optional[dict[str, Any]] = None  # last match result
@@ -58,6 +61,16 @@ class ScannerManager:
     @property
     def is_scanning(self) -> bool:
         return self._is_scanning
+
+    @property
+    def current_candidate(self) -> Optional[dict]:
+        """Candidato activo (None si no hay canción identificada)."""
+        return self._candidate
+
+    @property
+    def rms_level(self) -> float:
+        """Nivel RMS actual del audio capturado."""
+        return self._audio.current_rms
 
     def start(self) -> None:
         if self._is_scanning:
@@ -111,10 +124,29 @@ class ScannerManager:
         rms = self._audio.current_rms
         audio_active = rms >= self.AUDIO_THRESHOLD
 
+        # Log RMS every ~30 ticks (60 seconds) so we can diagnose audio issues
+        self._rms_log_counter += 1
+        if self._rms_log_counter >= 30:
+            self._rms_log_counter = 0
+            logger.info(
+                "ScannerManager: RMS=%.5f (threshold=%.4f) audio_active=%s candidate=%s",
+                rms, self.AUDIO_THRESHOLD, audio_active,
+                self._candidate.get('titulo', '?') if self._candidate else 'None',
+            )
+
         # --- Accumulate time on existing candidate ---
         if self._candidate is not None and audio_active:
             self._candidate['segundos_acumulados'] += self.ACCUMULATION_INTERVAL
             self._candidate['last_seen'] = time.time()
+
+            # Update porcentaje en tiempo real para la UI
+            segundos = self._candidate['segundos_acumulados']
+            duracion_seg = self._candidate['duracion_seg']
+            min_time = self._config.min_detection_time
+            if duracion_seg > 0:
+                self._candidate['porcentaje'] = min((segundos / duracion_seg) * 100.0, 100.0)
+            else:
+                self._candidate['porcentaje'] = min((segundos / max(min_time, 1)) * 100.0, 100.0)
 
             # Check if we should save the play
             if not self._candidate.get('play_guardado', False):
@@ -230,23 +262,27 @@ class ScannerManager:
 
         segundos = c['segundos_acumulados']
         duracion_seg = c['duracion_seg']
-        confianza = c['confianza']
 
-        # Compute percentage score
-        if duracion_seg > 0:
-            porcentaje = (confianza * 100.0)
-        else:
-            porcentaje = confianza * 100.0
-
+        # Porcentaje basado en tiempo (no en confianza)
         min_time = self._config.min_detection_time
+        if duracion_seg > 0:
+            porcentaje = min((segundos / duracion_seg) * 100.0, 100.0)
+        else:
+            porcentaje = min((segundos / max(min_time, 1)) * 100.0, 100.0)
+
         umbral = self._config.umbral_porcentaje
+
+        logger.debug(
+            "ScannerManager: _try_save_play '%s' segundos=%.1f duracion=%.1f pct=%.1f umbral=%.1f",
+            c['titulo'], segundos, duracion_seg, porcentaje, umbral,
+        )
 
         if segundos >= min_time and porcentaje >= umbral:
             self._save_play(c, segundos, porcentaje)
             c['play_guardado'] = True
             logger.info(
-                "ScannerManager: play saved for '%s - %s'",
-                c['artista'], c['titulo'],
+                "ScannerManager: play saved for '%s - %s' (%.1fs, %.1f%%)",
+                c['artista'], c['titulo'], segundos, porcentaje,
             )
 
     def _save_play(self, candidate: dict, segundos: float, porcentaje: float) -> None:
