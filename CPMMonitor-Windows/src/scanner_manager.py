@@ -22,7 +22,7 @@ class ScannerManager:
     6. Pre-credit time detected before identification (audioDetectedAt).
     """
 
-    AUDIO_THRESHOLD: float = 0.004
+    AUDIO_THRESHOLD: float = 0.001   # WASAPI loopback levels vary by device; 0.001 catches YouTube/Spotify
     ACCUMULATION_INTERVAL: float = 2.0   # seconds between RMS ticks
     REQUIRED_CONFIRMATIONS: int = 2
     SAMPLE_SECONDS: int = 20

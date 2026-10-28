@@ -447,9 +447,10 @@ class MonitorWindow:
             logger.warning("Promovidas fetch error: %s", e)
         finally:
             self._promos_loading = False
-            # Schedule UI update on the tk mainloop that was running when fetch started
+            # after() is one of the few thread-safe tkinter calls — use it directly
+            # without winfo_exists() which is NOT safe from background threads
             try:
-                if root_snap and root_snap.winfo_exists():
+                if root_snap is not None:
                     root_snap.after(0, self._render_promovidas)
             except Exception:
                 pass
