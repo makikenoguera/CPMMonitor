@@ -162,6 +162,15 @@ class MonitorWindow:
     # ── Window lifecycle ──────────────────────────────────────────────────────
 
     def _run(self) -> None:
+        try:
+            self._run_inner()
+        except Exception as exc:
+            logger.error("MonitorWindow crashed: %s", exc, exc_info=True)
+        finally:
+            with self._lock:
+                self._root = None
+
+    def _run_inner(self) -> None:
         root = tk.Tk()
         self._root = root
         root.title(APP_NAME)
@@ -298,7 +307,7 @@ class MonitorWindow:
         row2.pack(fill="x", pady=(4, 0))
         self._np_title = tk.Label(row2, text="Sin reproducción activa",
                                    bg=BG_CARD, fg=TEXT_SEC,
-                                   font=("Segoe UI", 12, "semibold"))
+                                   font=("Segoe UI", 12))
         self._np_title.pack(side="left")
         self._np_pct = tk.Label(row2, text="", bg=BG_CARD, fg=BRAND, font=FONT_BIG)
         self._np_pct.pack(side="right")
