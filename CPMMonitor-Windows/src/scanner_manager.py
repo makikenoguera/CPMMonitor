@@ -24,7 +24,7 @@ class ScannerManager:
 
     AUDIO_THRESHOLD: float = 0.001   # WASAPI loopback levels vary by device
     ACCUMULATION_INTERVAL: float = 2.0   # seconds between RMS ticks
-    REQUIRED_CONFIRMATIONS: int = 1      # 1 = faster detection (no need to confirm twice)
+    REQUIRED_CONFIRMATIONS: int = 2      # 2 consecutive matches required before confirming
     SAMPLE_SECONDS: int = 15             # 15s of audio is enough for Chromaprint
     MIN_QUERY_INTERVAL: float = 10.0     # query every 10s (was 20s — too slow)
     PERIODIC_CHECK_INTERVAL: float = 10.0
