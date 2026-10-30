@@ -22,12 +22,12 @@ class ScannerManager:
     6. Pre-credit time detected before identification (audioDetectedAt).
     """
 
-    AUDIO_THRESHOLD: float = 0.001   # WASAPI loopback levels vary by device; 0.001 catches YouTube/Spotify
+    AUDIO_THRESHOLD: float = 0.001   # WASAPI loopback levels vary by device
     ACCUMULATION_INTERVAL: float = 2.0   # seconds between RMS ticks
-    REQUIRED_CONFIRMATIONS: int = 2
-    SAMPLE_SECONDS: int = 20
-    MIN_QUERY_INTERVAL: float = 20.0     # min seconds between fingerprint queries
-    PERIODIC_CHECK_INTERVAL: float = 20.0
+    REQUIRED_CONFIRMATIONS: int = 1      # 1 = faster detection (no need to confirm twice)
+    SAMPLE_SECONDS: int = 15             # 15s of audio is enough for Chromaprint
+    MIN_QUERY_INTERVAL: float = 10.0     # query every 10s (was 20s — too slow)
+    PERIODIC_CHECK_INTERVAL: float = 10.0
 
     def __init__(self, config, db, catalog, matcher, audio) -> None:
         self._config = config

@@ -6,6 +6,7 @@ Design matches the macOS app: light theme, 3-tab monitor window
 
 import datetime
 import logging
+import queue
 import threading
 import webbrowser
 from typing import Optional
@@ -130,6 +131,7 @@ class MonitorWindow:
         self._root: Optional[tk.Tk] = None
         self._lock   = threading.Lock()
         self._thread: Optional[threading.Thread] = None   # guard against multiple windows
+        self._ui_queue: queue.Queue = queue.Queue()        # thread-safe UI callbacks
 
         # Tab state
         self._active_tab  = 1      # 0=Promovidas 1=Monitoreo 2=Ganancias
@@ -447,13 +449,9 @@ class MonitorWindow:
             logger.warning("Promovidas fetch error: %s", e)
         finally:
             self._promos_loading = False
-            # after() is one of the few thread-safe tkinter calls — use it directly
-            # without winfo_exists() which is NOT safe from background threads
-            try:
-                if root_snap is not None:
-                    root_snap.after(0, self._render_promovidas)
-            except Exception:
-                pass
+            # Use queue — the ONLY reliable way to push work to a tkinter mainloop
+            # running in a non-main thread. _do_refresh drains this queue each tick.
+            self._ui_queue.put(self._render_promovidas)
 
     def _render_promovidas(self):
         inner = self._promo_scroll.inner
@@ -551,6 +549,12 @@ class MonitorWindow:
 
     def _build_tab_monitoreo(self, parent) -> tk.Frame:
         f = tk.Frame(parent, bg=BG_PAGE)
+
+        # Diagnostic strip (fpcalc · catalog · audio · last query)
+        self._diag_lbl = tk.Label(f, text="", bg="#FFFBF0", fg=TEXT_LBL,
+                                   font=("Consolas", 8), anchor="w", padx=8, pady=4)
+        self._diag_lbl.pack(fill="x")
+        tk.Frame(f, bg="#FFE082", height=1).pack(fill="x")
 
         # Summary bar (updated on refresh)
         self._mon_summary = tk.Label(f, text="", bg=BG_PAGE, fg=TEXT_SEC,
@@ -944,6 +948,13 @@ class MonitorWindow:
     # ── Periodic refresh ──────────────────────────────────────────────────────
 
     def _do_refresh(self, root: tk.Tk) -> None:
+        # Drain thread-safe queue first (e.g. promovidas fetch result)
+        while not self._ui_queue.empty():
+            try:
+                fn = self._ui_queue.get_nowait()
+                fn()
+            except Exception as e:
+                logger.debug("MonitorWindow queue callback error: %s", e)
         try:
             self._refresh_all(root)
         except Exception as e:
@@ -966,6 +977,9 @@ class MonitorWindow:
         except Exception:
             pass
 
+        # Diagnostic strip (always visible in Monitoreo tab)
+        self._update_diag()
+
         # Now playing
         self._refresh_now_playing()
 
@@ -981,6 +995,37 @@ class MonitorWindow:
             self._render_monitoreo(plays)
         elif self._active_tab == 2:
             self._render_ganancias(plays)
+
+    def _update_diag(self):
+        """Update the diagnostic strip in the Monitoreo tab."""
+        try:
+            from src.fingerprint import FingerprintEngine
+            fpcalc_ok = FingerprintEngine.is_available()
+        except Exception:
+            fpcalc_ok = False
+
+        try:
+            catalog_n = self._scanner._matcher._index.__len__() if hasattr(self._scanner._matcher, '_index') else '?'
+        except Exception:
+            catalog_n = '?'
+
+        rms   = self._scanner.rms_level
+        above = rms >= 0.001
+        bars  = "▮" * int(min(rms / 0.001, 8)) + "▯" * max(0, 8 - int(min(rms / 0.001, 8)))
+
+        scanning = self._scanner.is_scanning
+
+        diag = (
+            f"fpcalc: {'✓' if fpcalc_ok else '✗'}  "
+            f"catálogo: {catalog_n}  "
+            f"audio: {bars} {rms:.4f} ({'activo' if above else 'bajo'})  "
+            f"escaner: {'ON' if scanning else 'OFF'}"
+        )
+        fg = SR_GREEN if (fpcalc_ok and above and scanning) else ORANGE
+        try:
+            self._diag_lbl.config(text=diag, fg=fg)
+        except Exception:
+            pass
 
     def _refresh_now_playing(self):
         candidate = self._scanner.current_candidate

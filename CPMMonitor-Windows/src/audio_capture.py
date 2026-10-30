@@ -119,9 +119,11 @@ class AudioCaptureManager:
                 removed = self._chunks.popleft()
                 self._total_samples -= len(removed)
 
+    AUDIO_RMS_THRESHOLD: float = 0.001   # must match ScannerManager.AUDIO_THRESHOLD
+
     def _update_audio_detected(self, chunk: np.ndarray) -> None:
         rms = float(np.sqrt(np.mean(chunk.astype(np.float64) ** 2)))
-        if rms > 0.004:
+        if rms > self.AUDIO_RMS_THRESHOLD:
             if self._audio_detected_at == 0.0:
                 self._audio_detected_at = time.time()
         else:
