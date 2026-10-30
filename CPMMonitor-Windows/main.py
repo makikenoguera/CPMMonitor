@@ -44,12 +44,21 @@ def main() -> None:
     logger.info("Loaded %d tracks from local catalog", len(entries))
 
     if config.is_activated:
-        # Start background catalog sync
-        threading.Thread(
-            target=CatalogManager(config, catalog, matcher).check_for_updates,
-            daemon=True,
-            name='CatalogSync',
-        ).start()
+        catalog_mgr = CatalogManager(config, catalog, matcher)
+
+        def _catalog_loop() -> None:
+            """Sync catalog at startup then every 6 hours. Retries every 60s if empty."""
+            import time
+            while True:
+                catalog_mgr.check_for_updates()
+                # If catalog is still empty after sync, retry sooner
+                if catalog.track_count == 0:
+                    logger.warning("Catalog still empty after sync, retrying in 60s")
+                    time.sleep(60)
+                else:
+                    time.sleep(6 * 3600)
+
+        threading.Thread(target=_catalog_loop, daemon=True, name='CatalogSync').start()
 
         # Start scanner and sync
         scanner.start()
