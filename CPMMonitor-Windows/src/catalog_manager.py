@@ -1,3 +1,4 @@
+import base64
 import logging
 import threading
 from typing import TYPE_CHECKING
@@ -83,8 +84,17 @@ class CatalogManager:
 
         batch = []
         for t in tracks_raw:
-            fp_list = t.get('fingerprint', [])
-            fp_bytes = CatalogStore.encode_fp(fp_list) if fp_list else b''
+            # Server sends fp_raw as base64-encoded raw int32-LE bytes.
+            # Legacy 'fingerprint' field (list[int]) is also supported.
+            fp_b64 = t.get('fp_raw', '')
+            if fp_b64:
+                try:
+                    fp_bytes = base64.b64decode(fp_b64)
+                except Exception:
+                    fp_bytes = b''
+            else:
+                fp_list = t.get('fingerprint', [])
+                fp_bytes = CatalogStore.encode_fp(fp_list) if fp_list else b''
             batch.append({
                 'id': int(t['id']),
                 'artista': t.get('artista', ''),
@@ -103,8 +113,10 @@ class CatalogManager:
         self._store.local_version = version
         self._store.last_sync = version
 
+        with_fp = sum(1 for b in batch if b['fp_raw'])
         logger.info(
-            "CatalogManager: applied %d tracks, version=%d", len(batch), version
+            "CatalogManager: applied %d tracks (%d with fingerprints), version=%d",
+            len(batch), with_fp, version,
         )
 
         # Reload matcher with fresh data
@@ -118,15 +130,26 @@ class CatalogManager:
 
         local_version = self._store.local_version
         track_count = self._store.track_count
+        fp_count = self._store.fp_count
 
         logger.info(
-            "CatalogManager: local_version=%d server_version=%d track_count=%d",
-            local_version, server_version, track_count,
+            "CatalogManager: local_version=%d server_version=%d track_count=%d fp_count=%d",
+            local_version, server_version, track_count, fp_count,
         )
 
-        if track_count == 0:
-            # No local catalog - download full
-            logger.info("CatalogManager: no local catalog, downloading full")
+        # Self-heal: no fingerprints stored, or matcher is empty despite having tracks
+        matcher_count = len(self._matcher._index)
+        if (track_count > 0 and fp_count == 0) or (track_count > 0 and matcher_count == 0):
+            logger.warning(
+                "CatalogManager: tracks=%d fp=%d matcher=%d — forcing full re-download",
+                track_count, fp_count, matcher_count,
+            )
+            self._store.local_version = 0
+            local_version = 0
+
+        if track_count == 0 or local_version == 0:
+            # No local catalog (or reset) - download full
+            logger.info("CatalogManager: downloading full catalog")
             data = self._fetch_full()
             if data:
                 self._apply_catalog_data(data)
@@ -138,4 +161,8 @@ class CatalogManager:
             if data:
                 self._apply_catalog_data(data)
         else:
-            logger.info("CatalogManager: catalog is up to date")
+            logger.info("CatalogManager: catalog is up to date (%d tracks, %d with fingerprints)", track_count, fp_count)
+            # Always reload matcher to cover the case where startup loaded 0 entries
+            if matcher_count == 0 and fp_count > 0:
+                logger.info("CatalogManager: reloading matcher from local store")
+                self._matcher.reload(self._store.load_all())
