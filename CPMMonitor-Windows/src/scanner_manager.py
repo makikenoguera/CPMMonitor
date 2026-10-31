@@ -190,7 +190,33 @@ class ScannerManager:
         if not values:
             return
 
-        match = self._matcher.match(values)
+        match = None
+
+        # Try local catalog first (fast, offline)
+        if len(self._matcher._index) > 0:
+            match = self._matcher.match(values)
+            if match:
+                logger.debug("ScannerManager: local match found")
+
+        # Fall back to server-side identification when local catalog is empty
+        if match is None and self._config.is_activated:
+            fp_str = fp_result.get('fingerprint', '')
+            duration = int(fp_result.get('duration', 0))
+            if fp_str:
+                from src.api_client import APIClient
+                result = APIClient(self._config).identify(fp_str, duration, self._config.venue_id)
+                if result:
+                    match = {
+                        'artista':     result.get('artista', ''),
+                        'titulo':      result.get('titulo', ''),
+                        'isrc':        result.get('isrc', ''),
+                        'duration_seg': float(result.get('duracion', 0)),
+                        'score':       float(result.get('confianza', 0.8)),
+                        'in_catalog':  result.get('in_catalog', False),
+                        'is_promovida': result.get('is_promovida', False),
+                    }
+                    logger.debug("ScannerManager: server match '%s - %s'", match['artista'], match['titulo'])
+
         if match is None:
             logger.debug("ScannerManager: no match found")
             self._confirmation_count = 0

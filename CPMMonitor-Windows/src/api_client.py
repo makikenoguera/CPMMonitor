@@ -59,6 +59,36 @@ class APIClient:
             logger.error("APIClient.send_plays error: %s", exc, exc_info=True)
             return False
 
+    def identify(
+        self,
+        fingerprint: str,
+        duration: int,
+        venue_id: str,
+    ) -> Optional[dict[str, Any]]:
+        """POST /v1/identify — server-side fingerprint matching.
+
+        Returns match dict or None.
+        """
+        url = f"{self._base_url()}/v1/identify"
+        payload = {
+            "fingerprint": fingerprint,
+            "duration": duration,
+            "venue_id": venue_id,
+        }
+        try:
+            resp = requests.post(url, json=payload, headers=self._headers(), timeout=30)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get('matched'):
+                    return data
+                return None
+            else:
+                logger.warning("APIClient.identify: status=%d", resp.status_code)
+                return None
+        except Exception as exc:
+            logger.error("APIClient.identify error: %s", exc)
+            return None
+
     def verify_venue(
         self,
         venue_id: str,

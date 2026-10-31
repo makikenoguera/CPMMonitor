@@ -77,28 +77,37 @@ class FingerprintEngine:
 
             _write_wav(tmp_wav, pcm_data, sample_rate)
 
-            result = subprocess.run(
+            # Run fpcalc twice: raw int32 values for local matching,
+            # compressed string for server-side identification.
+            result_raw = subprocess.run(
                 [fpcalc, '-raw', '-json', tmp_wav],
-                capture_output=True,
-                timeout=30,
+                capture_output=True, timeout=30,
+            )
+            result_str = subprocess.run(
+                [fpcalc, '-json', tmp_wav],
+                capture_output=True, timeout=30,
             )
 
-            if result.returncode != 0:
-                stderr = result.stderr.decode('utf-8', errors='replace').strip()
-                logger.warning("fpcalc error (rc=%d): %s", result.returncode, stderr)
+            if result_raw.returncode != 0:
+                stderr = result_raw.stderr.decode('utf-8', errors='replace').strip()
+                logger.warning("fpcalc error (rc=%d): %s", result_raw.returncode, stderr)
                 return None
 
-            stdout = result.stdout.decode('utf-8', errors='replace').strip()
-            data = json.loads(stdout)
-
-            values = data.get('fingerprint', data.get('values', []))
-            duration = float(data.get('duration', 0.0))
+            data_raw = json.loads(result_raw.stdout.decode('utf-8', errors='replace'))
+            values = data_raw.get('fingerprint', data_raw.get('values', []))
+            duration = float(data_raw.get('duration', 0.0))
 
             if not values:
                 logger.warning("fpcalc returned empty fingerprint")
                 return None
 
-            return {'values': values, 'duration': duration}
+            # Compressed fingerprint string (for server /v1/identify)
+            fingerprint_str = ''
+            if result_str.returncode == 0:
+                data_str = json.loads(result_str.stdout.decode('utf-8', errors='replace'))
+                fingerprint_str = data_str.get('fingerprint', '')
+
+            return {'values': values, 'duration': duration, 'fingerprint': fingerprint_str}
 
         except json.JSONDecodeError as exc:
             logger.error("fpcalc JSON parse error: %s", exc)
