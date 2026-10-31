@@ -60,18 +60,34 @@ class CatalogManager:
 
     def _fetch_full(self) -> dict | None:
         url = f"{self._base_url()}/v1/catalog/full"
-        try:
-            resp = requests.get(url, headers=self._headers(), timeout=60)
-            resp.raise_for_status()
-            return resp.json()
-        except Exception as exc:
-            logger.error("CatalogManager: error fetching full catalog: %s", exc)
-            return None
+        for verify in (True, False):
+            try:
+                logger.info("CatalogManager: fetching full catalog from %s (verify=%s)", url, verify)
+                resp = requests.get(
+                    url, headers=self._headers(),
+                    timeout=(15, 300),  # 15s connect, 5min read for 23MB
+                    verify=verify,
+                    stream=True,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                logger.info("CatalogManager: full catalog received (%d tracks)", len(data.get('tracks', [])))
+                return data
+            except requests.exceptions.SSLError as exc:
+                if not verify:
+                    logger.error("CatalogManager: SSL error even with verify=False: %s", exc)
+                    return None
+                logger.warning("CatalogManager: SSL error, retrying without verification: %s", exc)
+                continue
+            except Exception as exc:
+                logger.error("CatalogManager: error fetching full catalog: %s", exc)
+                return None
+        return None
 
     def _fetch_delta(self, since: int) -> dict | None:
         url = f"{self._base_url()}/v1/catalog/delta"
         try:
-            resp = requests.get(url, headers=self._headers(), params={'since': since}, timeout=60)
+            resp = requests.get(url, headers=self._headers(), params={'since': since}, timeout=(15, 120))
             resp.raise_for_status()
             return resp.json()
         except Exception as exc:
