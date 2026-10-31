@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class CatalogManager:
+    last_error: str = ""  # last sync error, readable from UI
+
     def __init__(self, config: 'ConfigManager', store: CatalogStore, matcher: 'LocalMatcher'):
         self._config = config
         self._store = store
@@ -67,19 +69,21 @@ class CatalogManager:
                     url, headers=self._headers(),
                     timeout=(15, 300),  # 15s connect, 5min read for 23MB
                     verify=verify,
-                    stream=True,
                 )
                 resp.raise_for_status()
                 data = resp.json()
                 logger.info("CatalogManager: full catalog received (%d tracks)", len(data.get('tracks', [])))
+                CatalogManager.last_error = ""
                 return data
             except requests.exceptions.SSLError as exc:
+                CatalogManager.last_error = f"SSL: {exc}"
                 if not verify:
                     logger.error("CatalogManager: SSL error even with verify=False: %s", exc)
                     return None
                 logger.warning("CatalogManager: SSL error, retrying without verification: %s", exc)
                 continue
             except Exception as exc:
+                CatalogManager.last_error = f"{type(exc).__name__}: {exc}"
                 logger.error("CatalogManager: error fetching full catalog: %s", exc)
                 return None
         return None

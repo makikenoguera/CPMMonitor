@@ -1015,13 +1015,20 @@ class MonitorWindow:
 
         scanning = self._scanner.is_scanning
 
+        try:
+            from src.catalog_manager import CatalogManager
+            cat_err = CatalogManager.last_error
+        except Exception:
+            cat_err = ""
+
         diag = (
             f"fpcalc: {'✓' if fpcalc_ok else '✗'}  "
             f"catálogo: {catalog_n}  "
             f"audio: {bars} {rms:.4f} ({'activo' if above else 'bajo'})  "
             f"escaner: {'ON' if scanning else 'OFF'}"
+            + (f"  ⚠ {cat_err}" if cat_err else "")
         )
-        fg = SR_GREEN if (fpcalc_ok and above and scanning) else ORANGE
+        fg = SR_GREEN if (fpcalc_ok and above and scanning and catalog_n != 0) else ORANGE
         try:
             self._diag_lbl.config(text=diag, fg=fg)
         except Exception:
