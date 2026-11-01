@@ -68,9 +68,9 @@ def _enviar_batch(pendientes, endpoint, token):
 
     body = json.dumps({"plays": payload}).encode("utf-8")
     headers = {
-        "Content-Type":  "application/json",
-        "Authorization": f"Bearer {token}",
-        "User-Agent":    "CPMTracks-Agent/1.0",
+        "Content-Type": "application/json",
+        "X-API-Key":    token,
+        "User-Agent":   "CPMTracks-Agent/1.0",
     }
 
     try:
@@ -78,13 +78,16 @@ def _enviar_batch(pendientes, endpoint, token):
         resp = urllib.request.urlopen(req, timeout=10, context=_SSL_CONTEXT)
         data = json.loads(resp.read().decode())
 
-        # El servidor responde {"accepted": ["key1","key2",...]}
+        # El servidor responde {"accepted": ["key1","key2",...], "promovidas": [...]}
         accepted = set(data.get("accepted", []))
+        promovidas = set(data.get("promovidas", []))
         enviados = set()
         for ikey in accepted:
             if ikey in id_map:
                 database.marcar_enviado(id_map[ikey])
                 enviados.add(id_map[ikey])
+                if ikey in promovidas:
+                    database.marcar_promovida(id_map[ikey])
 
         # Si el servidor no implementa "accepted" aún, marcamos todos
         if not accepted and resp.status in (200, 201, 202):

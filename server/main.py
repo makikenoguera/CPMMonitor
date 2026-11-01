@@ -937,7 +937,19 @@ async def receive_plays(
                 log.error(f"[Plays] Error insertando play {play.idempotency_key}: {e}")
 
     log.info(f"[Plays] Recibidos: {len(accepted)}/{len(payload.plays)} para venue {first.venue_id}")
-    return {"accepted": accepted, "total": len(accepted)}
+
+    # Retornar cuáles plays son de canciones promovidas (para que el cliente actualice su DB local)
+    promovidas_keys = []
+    if accepted:
+        with get_conn(PLAYS_DB) as conn:
+            placeholders = ",".join("?" for _ in accepted)
+            rows = conn.execute(
+                f"SELECT idempotency_key FROM plays WHERE idempotency_key IN ({placeholders}) AND promovida_id IS NOT NULL",
+                accepted
+            ).fetchall()
+            promovidas_keys = [r[0] for r in rows]
+
+    return {"accepted": accepted, "total": len(accepted), "promovidas": promovidas_keys}
 
 
 @app.get("/v1/plays/{venue_id}")

@@ -21,20 +21,35 @@ def init_db():
     con = _connect()
     con.executescript("""
         CREATE TABLE IF NOT EXISTS plays (
-            id             INTEGER PRIMARY KEY AUTOINCREMENT,
-            idempotency_key TEXT UNIQUE NOT NULL,
-            timestamp      TEXT NOT NULL,
-            id_local       TEXT NOT NULL,
-            fuente         TEXT NOT NULL,
-            contenido      TEXT NOT NULL,
-            duracion       TEXT NOT NULL,
-            isrc           TEXT NOT NULL,
-            enviado        INTEGER NOT NULL DEFAULT 0,
-            intentos       INTEGER NOT NULL DEFAULT 0,
-            created_at     REAL NOT NULL
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            idempotency_key     TEXT UNIQUE NOT NULL,
+            timestamp           TEXT NOT NULL,
+            id_local            TEXT NOT NULL,
+            fuente              TEXT NOT NULL,
+            contenido           TEXT NOT NULL,
+            duracion            TEXT NOT NULL,
+            isrc                TEXT NOT NULL,
+            porcentaje          REAL NOT NULL DEFAULT 0,
+            segundos_escuchados REAL NOT NULL DEFAULT 0,
+            duracion_seg        REAL NOT NULL DEFAULT 0,
+            enviado             INTEGER NOT NULL DEFAULT 0,
+            intentos            INTEGER NOT NULL DEFAULT 0,
+            created_at          REAL NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_enviado ON plays(enviado);
     """)
+    # Migración: agregar columnas nuevas si no existen (DB antigua)
+    for col, definition in [
+        ("porcentaje",          "REAL NOT NULL DEFAULT 0"),
+        ("segundos_escuchados", "REAL NOT NULL DEFAULT 0"),
+        ("duracion_seg",        "REAL NOT NULL DEFAULT 0"),
+        ("is_promovida",        "INTEGER NOT NULL DEFAULT 0"),
+    ]:
+        try:
+            con.execute(f"ALTER TABLE plays ADD COLUMN {col} {definition}")
+            con.commit()
+        except Exception:
+            pass  # columna ya existe
     con.commit()
     con.close()
 
@@ -48,7 +63,17 @@ def _make_key(id_local, fuente, contenido, timestamp):
     return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
 
-def guardar_play(id_local, fuente, contenido, duracion, isrc, timestamp=None, porcentaje=0, segundos_escuchados=0, duracion_seg=0):
+def marcar_promovida(record_id, value=1):
+    try:
+        con = _connect()
+        con.execute("UPDATE plays SET is_promovida=? WHERE id=?", (value, record_id))
+        con.commit()
+        con.close()
+    except Exception as e:
+        print(f"[DB] Error marcando promovida: {e}")
+
+
+def guardar_play(id_local, fuente, contenido, duracion, isrc, timestamp=None, porcentaje=0, segundos_escuchados=0, duracion_seg=0, is_promovida=0):
     """Guarda una reproducción en la cola local. Retorna True si es nueva."""
     if timestamp is None:
         timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -57,9 +82,9 @@ def guardar_play(id_local, fuente, contenido, duracion, isrc, timestamp=None, po
         con = _connect()
         con.execute(
             """INSERT OR IGNORE INTO plays
-               (idempotency_key, timestamp, id_local, fuente, contenido, duracion, isrc, porcentaje, segundos_escuchados, duracion_seg, enviado, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,0,?)""",
-            (key, timestamp, id_local, fuente, contenido, duracion, isrc, porcentaje, segundos_escuchados, duracion_seg, time.time())
+               (idempotency_key, timestamp, id_local, fuente, contenido, duracion, isrc, porcentaje, segundos_escuchados, duracion_seg, is_promovida, enviado, created_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,0,?)""",
+            (key, timestamp, id_local, fuente, contenido, duracion, isrc, porcentaje, segundos_escuchados, duracion_seg, is_promovida, time.time())
         )
         insertado = con.total_changes > 0
         con.commit()
@@ -125,7 +150,9 @@ def historial_reciente(limite=50):
     try:
         con = _connect()
         rows = con.execute(
-            """SELECT timestamp, fuente, contenido, duracion, isrc, enviado
+            """SELECT timestamp, fuente, contenido, duracion, isrc, enviado,
+                      COALESCE(porcentaje, 0),
+                      COALESCE(is_promovida, 0)
                FROM plays ORDER BY created_at DESC LIMIT ?""",
             (limite,)
         ).fetchall()

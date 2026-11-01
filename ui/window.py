@@ -626,8 +626,9 @@ class VentanaPrincipal(QMainWindow):
                 artista, cancion = "—", contenido
 
             pct_col  = OK   if porcentaje >= 90 else WARN if porcentaje >= 50 else BAD
-            pago_txt = "✓ Sí" if cuenta else "✗ No"
-            pago_col = OK   if cuenta else BAD
+            es_promovida = bool(cuenta)
+            pago_txt = "★ Promovida" if es_promovida else "✗ No aplica"
+            pago_col = OK            if es_promovida else "#cc4444"
             est_txt  = "✓ Enviado" if enviado else "○ Pendiente"
             est_col  = fg_dim if enviado else WARN
             src_col  = SPOTIFY if "Spotify" in fuente else "#ff4444" if "YouTube" in fuente else "#4499ff"
@@ -635,9 +636,11 @@ class VentanaPrincipal(QMainWindow):
             idx = self.table.rowCount()
             self.table.insertRow(idx)
 
-            def cell(txt, color, bold=False, mono=False):
+            def cell(txt, color, bold=False, mono=False, bg=None):
                 item = QTableWidgetItem(str(txt))
                 item.setForeground(_col(color))
+                if bg:
+                    item.setBackground(_col(bg))
                 if bold or mono:
                     f = item.font()
                     if bold: f.setBold(True)
@@ -652,7 +655,8 @@ class VentanaPrincipal(QMainWindow):
             self.table.setItem(idx, 4, cell(cancion,   fg, bold=True))
             self.table.setItem(idx, 5, cell(duracion,  fg_faint, mono=True))
             self.table.setItem(idx, 6, cell(f"{porcentaje:.0f}%", pct_col, bold=True, mono=True))
-            self.table.setItem(idx, 7, cell(pago_txt,  pago_col, bold=True))
+            pago_bg = "#1a3a28" if es_promovida else "#3a1a1a"
+            self.table.setItem(idx, 7, cell(pago_txt, pago_col, bold=True, bg=pago_bg))
             self.table.setItem(idx, 8, cell(est_txt,   est_col))
             self.table.setRowHeight(idx, 36)
 
