@@ -80,6 +80,17 @@ def _start_of_month() -> datetime.datetime:
     return now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
 
+def _start_of_week() -> datetime.datetime:
+    now = datetime.datetime.now()
+    start = now - datetime.timedelta(days=now.weekday())
+    return start.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def _start_of_day() -> datetime.datetime:
+    now = datetime.datetime.now()
+    return now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
 def _format_seconds(s: float) -> str:
     s = int(s)
     if s >= 60:
@@ -137,6 +148,14 @@ class MonitorWindow:
         self._active_tab  = 1      # 0=Promovidas 1=Monitoreo 2=Ganancias
         self._tab_frames: list = []
         self._tab_btns:   list = []
+
+        # Monitoreo filter state
+        self._mon_filter = "todas"   # "todas" | "pagadas" | "no_pagadas"
+        self._mon_filter_btns: list = []
+
+        # Ganancias period state
+        self._gan_period = "mes"     # "hoy" | "semana" | "mes"
+        self._gan_period_btns: list = []
 
         # Promovidas cache
         self._promovidas:       list = []   # from server
@@ -498,10 +517,10 @@ class MonitorWindow:
         inner.pack(fill="x", padx=14, pady=10)
 
         # Music note circle
-        icon_frame = tk.Frame(inner, bg=BRAND, width=34, height=34)
+        icon_frame = tk.Frame(inner, bg=SR_GREEN, width=34, height=34)
         icon_frame.pack(side="left")
         icon_frame.pack_propagate(False)
-        tk.Label(icon_frame, text="♪", bg=BRAND, fg="white",
+        tk.Label(icon_frame, text="♪", bg=SR_GREEN, fg="white",
                  font=("Segoe UI", 13, "bold")).place(relx=0.5, rely=0.5, anchor="center")
 
         # Text block
@@ -556,10 +575,16 @@ class MonitorWindow:
         self._diag_lbl.pack(fill="x")
         tk.Frame(f, bg="#FFE082", height=1).pack(fill="x")
 
+        # Filter bar: Todas / Pagadas / No pagadas
+        self._mon_filter_frame = tk.Frame(f, bg=BG_PAGE)
+        self._mon_filter_frame.pack(fill="x")
+        self._build_mon_filter_bar(self._mon_filter_frame)
+        tk.Frame(f, bg=BORDER, height=1).pack(fill="x")
+
         # Summary bar (updated on refresh)
         self._mon_summary = tk.Label(f, text="", bg=BG_PAGE, fg=TEXT_SEC,
                                       font=FONT_SMALL, anchor="w")
-        self._mon_summary.pack(fill="x", padx=14, pady=(8, 4))
+        self._mon_summary.pack(fill="x", padx=14, pady=(6, 2))
         tk.Frame(f, bg=BORDER, height=1).pack(fill="x")
 
         # Scrollable history rows
@@ -572,31 +597,86 @@ class MonitorWindow:
         self._mon_empty.pack(pady=40)
         return f
 
+    def _build_mon_filter_bar(self, parent):
+        filters = [("Todas", "todas"), ("Pagadas", "pagadas"), ("No pagadas", "no_pagadas")]
+        self._mon_filter_btns = []
+        for label, key in filters:
+            col = tk.Frame(parent, bg=BG_PAGE)
+            col.pack(side="left", expand=True, fill="x")
+            btn = tk.Button(col, text=label, bg=BG_PAGE, fg=TEXT_SEC,
+                            relief="flat", bd=0, cursor="hand2",
+                            font=("Segoe UI", 10),
+                            command=lambda k=key: self._switch_mon_filter(k))
+            btn.pack(fill="x", padx=4, pady=(4, 0))
+            underline = tk.Frame(col, bg=BG_PAGE, height=2)
+            underline.pack(fill="x")
+            self._mon_filter_btns.append((btn, underline))
+        self._update_mon_filter_btns()
+
+    def _switch_mon_filter(self, key: str):
+        self._mon_filter = key
+        self._update_mon_filter_btns()
+        plays = []
+        try:
+            plays = self._db.fetch_history(limit=200)
+        except Exception:
+            pass
+        self._render_monitoreo(plays)
+
+    def _update_mon_filter_btns(self):
+        keys = ["todas", "pagadas", "no_pagadas"]
+        for i, (btn, ul) in enumerate(self._mon_filter_btns):
+            active = keys[i] == self._mon_filter
+            if active:
+                btn.config(fg=SR_GREEN, font=("Segoe UI", 10, "bold"))
+                ul.config(bg=SR_GREEN)
+            else:
+                btn.config(fg=TEXT_SEC, font=("Segoe UI", 10))
+                ul.config(bg=BG_PAGE)
+
     def _render_monitoreo(self, plays: list):
         inner = self._mon_scroll.inner
         for w in inner.winfo_children():
             w.destroy()
 
-        if not plays:
+        # Compute counts for filter button labels
+        def is_pagada(p):
+            return bool(p.get("in_catalog")) and p.get("porcentaje", 0) >= 80
+        pagadas_all  = [p for p in plays if is_pagada(p)]
+        no_pagadas_all = [p for p in plays if not is_pagada(p)]
+
+        # Update filter button labels with counts
+        labels = [
+            f"Todas ({len(plays)})",
+            f"{len(pagadas_all)} Pagadas",
+            f"{len(no_pagadas_all)} No pagadas",
+        ]
+        for i, (btn, _) in enumerate(self._mon_filter_btns):
+            try:
+                btn.config(text=labels[i])
+            except Exception:
+                pass
+
+        # Apply filter
+        if self._mon_filter == "pagadas":
+            visible = pagadas_all
+        elif self._mon_filter == "no_pagadas":
+            visible = no_pagadas_all
+        else:
+            visible = plays
+
+        if not visible:
             tk.Label(inner, text="♪", bg=BG_PAGE, fg=TEXT_LBL,
                      font=("Segoe UI", 28)).pack(pady=(30, 4))
             tk.Label(inner, text="Sin reproducciones registradas",
                      bg=BG_PAGE, fg=TEXT_LBL, font=FONT_BODY).pack()
+            self._mon_summary.config(text="")
             return
 
-        today       = datetime.date.today()
-        pagadas     = sum(1 for p in plays if p.get("in_catalog") and p.get("porcentaje", 0) >= 80)
-        promovidas  = sum(1 for p in plays if p.get("in_catalog"))
-        otras       = len(plays) - promovidas
+        self._mon_summary.config(
+            text=f"★ {len(pagadas_all)} pagadas  ·  {len(plays)} total")
 
-        parts = []
-        if pagadas:   parts.append(f"★ {pagadas} pagadas")
-        if promovidas: parts.append(f"{promovidas} promovidas")
-        if otras:      parts.append(f"{otras} otras")
-        parts.append(f"{len(plays)} total")
-        self._mon_summary.config(text="  ·  ".join(parts))
-
-        for i, p in enumerate(plays[:100]):
+        for i, p in enumerate(visible[:100]):
             self._mon_row(inner, p)
             tk.Frame(inner, bg=BORDER, height=1).pack(fill="x", padx=14)
 
@@ -645,8 +725,9 @@ class MonitorWindow:
                  font=("Segoe UI", 11, "bold"), anchor="w").pack(side="left", fill="x", expand=True)
 
         pct = p.get("porcentaje", 0)
+        pct_str = f"+{pct:.0f}%" if pct >= 80 else f"{pct:.0f}%"
         pct_color = SR_GREEN if qualifying else (ORANGE if pct >= 50 else TEXT_LBL)
-        tk.Label(row1, text=f"{pct:.0f}%", bg=bg, fg=pct_color,
+        tk.Label(row1, text=pct_str, bg=bg, fg=pct_color,
                  font=("Segoe UI", 11, "bold")).pack(side="right")
 
         # Status icon
@@ -669,12 +750,6 @@ class MonitorWindow:
         sub     = artista
         if isrc:
             sub += f"  ·  {isrc}"
-        if qualifying:
-            sub += "  ·  pagada"
-        elif in_cat:
-            sub += "  ·  promovida"
-        else:
-            sub += "  ·  no promovida"
 
         tk.Label(row2, text=sub, bg=bg, fg=TEXT_LBL,
                  font=FONT_SMALL, anchor="w").pack(side="left")
@@ -689,25 +764,22 @@ class MonitorWindow:
     def _build_tab_ganancias(self, parent) -> tk.Frame:
         f = tk.Frame(parent, bg=BG_PAGE)
 
-        # Period selector
-        period_f = tk.Frame(f, bg=BG_PAGE)
-        period_f.pack(fill="x", padx=14, pady=(10, 6))
-        self._period_lbl = tk.Label(period_f, text="Este mes", bg=BG_PAGE,
-                                     fg=TEXT_LBL, font=FONT_SMALL)
-        self._period_lbl.pack(side="right")
-        tk.Label(period_f, text="GANANCIAS", bg=BG_PAGE, fg=TEXT_LBL,
-                 font=FONT_LABEL).pack(side="left")
+        # Period filter bar
+        self._gan_period_frame = tk.Frame(f, bg=BG_PAGE)
+        self._gan_period_frame.pack(fill="x")
+        self._build_gan_period_bar(self._gan_period_frame)
+        tk.Frame(f, bg=BORDER, height=1).pack(fill="x")
 
         # Metric cards row
         cards_f = tk.Frame(f, bg=BG_PAGE)
-        cards_f.pack(fill="x", padx=14, pady=(0, 8))
+        cards_f.pack(fill="x", padx=14, pady=(8, 8))
         cards_f.columnconfigure(0, weight=1)
         cards_f.columnconfigure(1, weight=1)
 
         self._gan_plays_val = self._metric_card(cards_f, "REPRODUCCIONES PROMOVIDAS",
-                                                  "0", BRAND, "★", 0)
+                                                  "0", SR_GREEN, "★", 0)
         self._gan_income_val = self._metric_card(cards_f, "TU INGRESO",
-                                                   "$0 COP", ORANGE, "$", 1)
+                                                   "$0 COP", SR_GREEN, "$", 1)
 
         tk.Frame(f, bg=BORDER, height=1).pack(fill="x", padx=14)
 
@@ -738,6 +810,43 @@ class MonitorWindow:
         self._gan_empty.pack(pady=30)
         return f
 
+    def _build_gan_period_bar(self, parent):
+        periods = [("Hoy", "hoy"), ("Esta semana", "semana"), ("Este mes", "mes")]
+        self._gan_period_btns = []
+        for label, key in periods:
+            col = tk.Frame(parent, bg=BG_PAGE)
+            col.pack(side="left", expand=True, fill="x")
+            btn = tk.Button(col, text=label, bg=BG_PAGE, fg=TEXT_SEC,
+                            relief="flat", bd=0, cursor="hand2",
+                            font=("Segoe UI", 10),
+                            command=lambda k=key: self._switch_gan_period(k))
+            btn.pack(fill="x", padx=4, pady=(4, 0))
+            underline = tk.Frame(col, bg=BG_PAGE, height=2)
+            underline.pack(fill="x")
+            self._gan_period_btns.append((btn, underline))
+        self._update_gan_period_btns()
+
+    def _switch_gan_period(self, key: str):
+        self._gan_period = key
+        self._update_gan_period_btns()
+        plays = []
+        try:
+            plays = self._db.fetch_history(limit=200)
+        except Exception:
+            pass
+        self._render_ganancias(plays)
+
+    def _update_gan_period_btns(self):
+        keys = ["hoy", "semana", "mes"]
+        for i, (btn, ul) in enumerate(self._gan_period_btns):
+            active = keys[i] == self._gan_period
+            if active:
+                btn.config(fg=SR_GREEN, font=("Segoe UI", 10, "bold"))
+                ul.config(bg=SR_GREEN)
+            else:
+                btn.config(fg=TEXT_SEC, font=("Segoe UI", 10))
+                ul.config(bg=BG_PAGE)
+
     def _metric_card(self, parent, label, value, color, icon, col) -> tk.Label:
         card = tk.Frame(parent, bg=BG_CARD, bd=1, relief="solid",
                         highlightbackground=BORDER, highlightthickness=1)
@@ -757,7 +866,6 @@ class MonitorWindow:
 
     def _render_ganancias(self, plays: list):
         if not self._promovidas:
-            # Try to compute from local catalog data
             pass
 
         # Build promo index
@@ -768,9 +876,17 @@ class MonitorWindow:
                 promo_by_isrc[p["isrc"].upper()] = p
             promo_by_title[p.get("titulo", "").lower().strip()] = p
 
+        # Period filter
+        if self._gan_period == "hoy":
+            period_start = _start_of_day().timestamp()
+        elif self._gan_period == "semana":
+            period_start = _start_of_week().timestamp()
+        else:
+            period_start = _start_of_month().timestamp()
+        plays = [p for p in plays if p.get("created_at", 0) >= period_start]
+
         # Group plays
         groups: dict = {}
-        today_start = _start_of_month()
         for play in plays:
             if play.get("porcentaje", 0) < 80:
                 continue
@@ -810,8 +926,9 @@ class MonitorWindow:
         for w in host.winfo_children():
             w.destroy()
 
+        period_label = {"hoy": "hoy", "semana": "esta semana", "mes": "este mes"}.get(self._gan_period, "")
         if not rows:
-            self._gan_empty.config(text="Sin reproducciones promovidas este mes")
+            self._gan_empty.config(text=f"Sin reproducciones promovidas {period_label}")
             self._gan_empty.pack(pady=30)
             self._gan_scroll.refresh_scroll()
             return
@@ -823,16 +940,16 @@ class MonitorWindow:
             tk.Frame(host, bg=BORDER, height=1).pack(fill="x", padx=14)
 
         # Totals row
-        tot = tk.Frame(host, bg="#FFF5EE")
+        tot = tk.Frame(host, bg="#F0FFF4")
         tot.pack(fill="x")
-        tin = tk.Frame(tot, bg="#FFF5EE")
+        tin = tk.Frame(tot, bg="#F0FFF4")
         tin.pack(fill="x", padx=14, pady=8)
-        tk.Label(tin, text="TOTAL", bg="#FFF5EE", fg=TEXT_LBL,
+        tk.Label(tin, text="TOTAL", bg="#F0FFF4", fg=TEXT_LBL,
                  font=FONT_LABEL).pack(side="left", expand=True, fill="x", anchor="w")
-        tk.Label(tin, text=str(total_plays), bg="#FFF5EE", fg=BRAND,
+        tk.Label(tin, text=str(total_plays), bg="#F0FFF4", fg=SR_GREEN,
                  font=("Segoe UI", 13, "bold"), width=8, anchor="center").pack(side="left")
-        tk.Label(tin, text=" ", bg="#FFF5EE", width=12).pack(side="left")
-        tk.Label(tin, text=_format_cop(total_earnings), bg="#FFF5EE", fg=ORANGE,
+        tk.Label(tin, text=" ", bg="#F0FFF4", width=12).pack(side="left")
+        tk.Label(tin, text=_format_cop(total_earnings), bg="#F0FFF4", fg=SR_GREEN,
                  font=("Segoe UI", 13, "bold"), anchor="e").pack(side="right")
 
         self._gan_scroll.refresh_scroll()
@@ -851,7 +968,7 @@ class MonitorWindow:
                  font=FONT_SMALL, anchor="w").pack(fill="x")
 
         count = len(g["plays"])
-        tk.Label(inner, text=str(count), bg=BG_CARD, fg=BRAND,
+        tk.Label(inner, text=str(count), bg=BG_CARD, fg=SR_GREEN,
                  font=("Segoe UI", 16, "bold"), width=5, anchor="center").pack(side="left")
 
         last_play = max((p.get("created_at", 0) for p in g["plays"]), default=0)
@@ -860,7 +977,7 @@ class MonitorWindow:
                  font=FONT_SMALL, width=10, anchor="center", justify="center").pack(side="left")
 
         earnings = count * g["tarifa"]
-        tk.Label(inner, text=_format_cop(earnings), bg=BG_CARD, fg=ORANGE,
+        tk.Label(inner, text=_format_cop(earnings), bg=BG_CARD, fg=SR_GREEN,
                  font=("Segoe UI", 11, "bold"), anchor="e").pack(side="right")
 
     # ── Settings overlay ──────────────────────────────────────────────────────
