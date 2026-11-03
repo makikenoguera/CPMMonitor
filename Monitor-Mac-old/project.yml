@@ -1,0 +1,48 @@
+name: SumarteRedMonitor
+options:
+  bundleIdPrefix: com.cpmtracks
+  deploymentTarget:
+    macOS: "12.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    PRODUCT_NAME: SumarteRedMonitor
+    MARKETING_VERSION: "1.1.0"
+    CURRENT_PROJECT_VERSION: "2"
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "12.0"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: YES
+
+targets:
+  SumarteRedMonitor:
+    type: application
+    platform: macOS
+    sources:
+      - path: SumarteRedMonitor
+    dependencies:
+      - sdk: ServiceManagement.framework
+    info:
+      path: SumarteRedMonitor/Info.plist
+      properties:
+        CFBundleName: SumarteRedMonitor
+        CFBundleDisplayName: CPM Monitor
+        CFBundleIdentifier: com.cpmtracks.monitor
+        CFBundleVersion: "2"
+        CFBundleShortVersionString: "1.1.0"
+        CFBundleIconFile: AppIcon
+        LSUIElement: true
+        NSAppleEventsUsageDescription: "CPM Monitor necesita acceder a Spotify, Apple Music, VLC y YouTube para detectar las canciones en reproducción."
+        NSAppleScriptEnabled: true
+        LSMinimumSystemVersion: "12.0"
+        NSPrincipalClass: NSApplication
+    entitlements:
+      path: SumarteRedMonitor/SumarteRedMonitor.entitlements
+    settings:
+      base:
+        INFOPLIST_FILE: SumarteRedMonitor/Info.plist
+        CODE_SIGN_ENTITLEMENTS: SumarteRedMonitor/SumarteRedMonitor.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: com.cpmtracks.monitor

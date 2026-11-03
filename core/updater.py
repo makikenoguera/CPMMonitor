@@ -19,7 +19,7 @@ log = logging.getLogger("updater")
 
 _IS_WIN = platform.system() == "Windows"
 
-VERSION_ACTUAL  = "4.3"
+VERSION_ACTUAL  = "4.4"
 VERSION_URL     = "https://monitor.cpmtracks.com/monitor-install/version.json"
 CHECK_INTERVALO = 86400  # 24 horas en segundos
 ULTIMA_REVISION = 0
@@ -82,7 +82,7 @@ def _descargar_e_instalar(url, version, play_actual_fn):
     try:
         log.info(f"[UPDATER] Descargando version {version}...")
         suffix = '.exe' if _IS_WIN else '.pkg'
-        tmp = tempfile.mktemp(suffix=suffix, prefix='CPMMonitor_update_')
+        tmp = tempfile.mktemp(suffix=suffix, prefix='SumarteRedMonitor_update_')
         urllib.request.urlretrieve(url, tmp)
         log.info(f"[UPDATER] Descarga completada: {tmp}")
 
@@ -109,7 +109,7 @@ def _descargar_e_instalar(url, version, play_actual_fn):
                 # Reiniciar app Windows
                 time.sleep(3)
                 exe_path = os.path.join(
-                    os.environ.get('LOCALAPPDATA', ''), 'CPMTracks', 'CPMMonitor.exe'
+                    os.environ.get('LOCALAPPDATA', ''), 'CPMTracks', 'SumarteRedMonitor.exe'
                 )
                 if os.path.exists(exe_path):
                     subprocess.Popen([exe_path])
@@ -123,26 +123,27 @@ def _descargar_e_instalar(url, version, play_actual_fn):
                 except Exception:
                     pass
         else:
-            # macOS: instalar .pkg con sudo installer
-            resultado = subprocess.run(
-                ['sudo', 'installer', '-pkg', tmp, '-target', '/'],
-                capture_output=True, text=True, timeout=300
-            )
-            if resultado.returncode == 0:
-                log.info(f"[UPDATER] Version {version} instalada correctamente")
-                try:
-                    os.remove(tmp)
-                except Exception:
-                    pass
-                # Reiniciar la app despues de instalar
-                time.sleep(3)
-                subprocess.Popen(['open', '/Applications/CPMMonitor.app'])
-            else:
-                log.warning(f"[UPDATER] Error instalando (macOS): {resultado.stderr}")
-                try:
-                    os.remove(tmp)
-                except Exception:
-                    pass
+            # macOS: mover el .pkg al Escritorio y abrirlo para que el usuario lo instale
+            import pathlib
+            desktop = pathlib.Path.home() / "Desktop" / f"SumarteRedMonitor_v{version}.pkg"
+            try:
+                import shutil
+                shutil.move(tmp, str(desktop))
+            except Exception:
+                desktop = pathlib.Path(tmp)
+            log.info(f"[UPDATER] .pkg descargado en: {desktop}")
+            # Abrir el instalador — el usuario solo necesita hacer clic en Continuar
+            subprocess.Popen(['open', str(desktop)])
+            # Mostrar notificación via osascript
+            msg = f"CPM Monitor v{version} está disponible. Se abrió el instalador en tu Escritorio."
+            try:
+                subprocess.run(
+                    ['osascript', '-e',
+                     f'display notification "{msg}" with title "CPM Monitor — Actualización"'],
+                    timeout=5
+                )
+            except Exception:
+                pass
 
     except Exception as e:
         log.warning(f"[UPDATER] Error en actualizacion: {e}")
@@ -184,12 +185,13 @@ class Updater:
         data = _obtener_version_remota()
         if not data:
             return
-        version_remota = data.get("version", "0")
-        # Seleccionar URL según plataforma
+        # Leer versión y URL según plataforma
         if _IS_WIN:
-            url = data.get("url_win_exe", data.get("url", ""))
+            version_remota = data.get("version_win") or data.get("version", "0")
+            url = data.get("url_win_exe", "")
         else:
-            url = data.get("url", "")
+            version_remota = data.get("version_mac") or data.get("version", "0")
+            url = data.get("url_pkg") or data.get("url", "")
 
         if not url:
             log.warning("[UPDATER] No hay URL de descarga disponible para esta plataforma")

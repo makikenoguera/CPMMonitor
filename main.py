@@ -24,7 +24,7 @@ def _acquire_instance_lock():
 
     if _IS_WIN:
         import ctypes
-        _mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "CPMMonitor_SingleInstance")
+        _mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "SumarteRedMonitor_SingleInstance")
         if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
             sys.exit(0)
         return _mutex

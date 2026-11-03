@@ -2,7 +2,7 @@
 REM ============================================================
 REM  CPM Monitor - Script de compilacion para Windows
 REM  Requiere: Python 3.11+, pip install -r requirements_win.txt
-REM  Genera: dist\CPMMonitor.exe (onefile, todo incluido)
+REM  Genera: dist\SumarteRedMonitor.exe (onefile, todo incluido)
 REM ============================================================
 
 echo [1/2] Instalando dependencias...
@@ -14,7 +14,7 @@ if %errorlevel% neq 0 (
 )
 
 echo [2/2] Compilando con PyInstaller (onefile)...
-pyinstaller CPMMonitor_win.spec --clean --noconfirm
+pyinstaller SumarteRedMonitor_win.spec --clean --noconfirm
 if %errorlevel% neq 0 (
     echo ERROR: PyInstaller fallo
     pause
@@ -24,10 +24,10 @@ if %errorlevel% neq 0 (
 echo.
 echo ============================================================
 echo  Listo!
-echo  Ejecutable: dist\CPMMonitor.exe
+echo  Ejecutable: dist\SumarteRedMonitor.exe
 echo  (Un solo archivo, no necesita instalacion adicional)
 echo ============================================================
 echo  Sube el archivo al servidor:
-echo  monitor.cpmtracks.com/monitor-install/CPMMonitor.exe
+echo  monitor.cpmtracks.com/monitor-install/SumarteRedMonitor.exe
 echo ============================================================
 pause

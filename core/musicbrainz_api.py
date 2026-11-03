@@ -16,7 +16,7 @@ log = logging.getLogger("musicbrainz")
 _cache = {}
 _last_req = 0.0
 
-USER_AGENT = "CPMMonitor/1.0 (contacto@cpmtracks.com)"
+USER_AGENT = "SumarteRedMonitor/1.0 (contacto@cpmtracks.com)"
 
 
 def _ssl_ctx():

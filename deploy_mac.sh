@@ -3,7 +3,7 @@
 # Firma con certificado Apple Development → TCC persiste entre rebuilds
 set -e
 
-PROJECT="/Users/macbookpro/CPMTracks/CPMMonitor-Mac-ACR/SumarteRedMonitor.xcodeproj"
+PROJECT="/Users/macbookpro/CPMTracks/SumarteRedMonitor-Mac-ACR/SumarteRedMonitor.xcodeproj"
 SCHEME="SumarteRedMonitor"
 DERIVED="/Users/macbookpro/Library/Developer/Xcode/DerivedData/SumarteRedMonitor-gpltilsfdhjcbocakxliixwgsnlb/Build/Products/Release/SumarteRedMonitor.app"
 DEST="/Applications/SumarteRed Monitor.app"

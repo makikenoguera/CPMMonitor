@@ -1,7 +1,7 @@
 # CPM Monitor — Memoria del Proyecto v4.3
 **Fecha de hito:** 26 de mayo de 2026  
 **Tag Git:** `v4.3-stable`  
-**Repo:** `makikenoguera/CPMMonitor`
+**Repo:** `makikenoguera/SumarteRedMonitor`
 
 ---
 
@@ -18,7 +18,7 @@ Agente de monitoreo de reproducciones de audio y video para establecimientos com
 | API REST | Flask + SQLite | VPS Hostinger `srv475804` |
 | Dashboard web | HTML/CSS/JS vanilla | `/opt/cpmtracks/dashboard/` |
 | Página de descarga | HTML estático | `monitor.cpmtracks.com/descargar.html` |
-| Build Windows | GitHub Actions | `makikenoguera/CPMMonitor` |
+| Build Windows | GitHub Actions | `makikenoguera/SumarteRedMonitor` |
 
 ---
 
@@ -33,7 +33,7 @@ Agente de monitoreo de reproducciones de audio y video para establecimientos com
 ### Mac (desarrollo)
 - **Proyecto:** `/Users/macbookpro/CPMTracks/`
 - **App macOS:** `main.py` + `ui/` + `core/`
-- **Spec Windows:** `CPMMonitor_win.spec`
+- **Spec Windows:** `SumarteRedMonitor_win.spec`
 - **Installer:** `installer.iss` (Inno Setup)
 
 ### Windows (usuario final)
@@ -103,8 +103,8 @@ Formato aleatorio `XXXX-XXXX-XXXX` (A-Z + 0-9), generado en el servidor. No secu
 ### Proceso
 1. Push a tag `v*` en GitHub → dispara `build_windows.yml`
 2. GitHub Actions (`windows-latest`) instala dependencias de `requirements_win.txt`
-3. PyInstaller con `CPMMonitor_win.spec` → `dist/CPMMonitor/` (onedir, sin UPX)
-4. Inno Setup con `installer.iss` → `Output/CPMMonitor_Setup_v4.3.exe`
+3. PyInstaller con `SumarteRedMonitor_win.spec` → `dist/SumarteRedMonitor/` (onedir, sin UPX)
+4. Inno Setup con `installer.iss` → `Output/SumarteRedMonitor_Setup_v4.3.exe`
 5. Release automático en GitHub con el `.exe` adjunto
 
 ### Decisiones clave
@@ -140,9 +140,9 @@ Formato aleatorio `XXXX-XXXX-XXXX` (A-Z + 0-9), generado en el servidor. No secu
 ```json
 {
   "version": "4.3",
-  "url": "https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v4.3.zip",
-  "url_win_exe": "https://monitor.cpmtracks.com/monitor-install/CPMMonitor.exe",
-  "url_win_zip": "https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v4.3_win.zip"
+  "url": "https://monitor.cpmtracks.com/monitor-install/SumarteRedMonitor_v4.3.zip",
+  "url_win_exe": "https://monitor.cpmtracks.com/monitor-install/SumarteRedMonitor.exe",
+  "url_win_zip": "https://monitor.cpmtracks.com/monitor-install/SumarteRedMonitor_v4.3_win.zip"
 }
 ```
 

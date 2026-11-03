@@ -1,0 +1,445 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0513207BC527E499F8D1F362 /* ConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9790B773462560716186A3DE /* ConfigManager.swift */; };
+		1397495625E47A581D165758 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5415AD455F2CC5C3DED7447E /* AppConfig.swift */; };
+		1651809F5C0765F34200D4A0 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694AB6FE5DBB1D726C345C26 /* SetupView.swift */; };
+		19F8DA20B656EB346758E4F1 /* AppleScriptRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FE829F1D11C5D3EAE17225 /* AppleScriptRunner.swift */; };
+		2FAD4F115CA23E6449E4F23D /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C80C796E0977FE85AE030B3D /* APIClient.swift */; };
+		351EA9553DD3C37C0878F035 /* ScannerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9B03DA534F0983EF2815237 /* ScannerManager.swift */; };
+		362DE271A3FDBD3C508FD20B /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63B1A92A665EB6FA968E734A /* SyncManager.swift */; };
+		4340977E914885E0F2ED8685 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C58AD6171CD2C43F0BCFAF8 /* DatabaseManager.swift */; };
+		4C673BFC7645F6A822C2E514 /* YouTubeScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88C7AE33A1F4C5CCF0F82F07 /* YouTubeScanner.swift */; };
+		4D5F6637A7ABCFE7CD3626A1 /* MenuBarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FE4405BABF83231411BF932 /* MenuBarManager.swift */; };
+		5166155B7B2686316043B1A4 /* PanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9357E23A5D6723C31F3D4339 /* PanelController.swift */; };
+		6856A0A9C197913B91BB2FDF /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D086C27B3F67165D147D436 /* RootView.swift */; };
+		779057F4EAB355C7BF3AA954 /* TrackInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 524347AEB62901CFCCDEF029 /* TrackInfo.swift */; };
+		7DD53147456487B7500B41A3 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89F16CE92123EF741B5CAF01 /* ServiceManagement.framework */; };
+		8C2D3560062E0D912B6AEC23 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D4B5922E9F9BEE36C276D3 /* PermissionManager.swift */; };
+		8C9DA16FAEEE244E920042BF /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660A6EA32451F42D2FFA8C5B /* AppDelegate.swift */; };
+		8F43FBE96207F648A12FA3FA /* SpotifyScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D35A874AF9553B2848199DF /* SpotifyScanner.swift */; };
+		974F61DDF2CF04741C2FDF06 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E41CAC905AA73924D2E892A /* ContentView.swift */; };
+		97D1A66B43A968837B26FB9C /* LaunchAtLoginManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 570C2C8A9B04733F79066404 /* LaunchAtLoginManager.swift */; };
+		BC9810AA767117029CDE4EE6 /* SumarteRedMonitorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FC8AAF1FA55D3BFE320A3B /* SumarteRedMonitorApp.swift */; };
+		D9EEECB7D891587D29AD0658 /* VLCScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA7169D059E57B07EAAFD34F /* VLCScanner.swift */; };
+		F04F5D0F0A89F95B64E50DA8 /* AppleMusicScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6A3383AF1375DD9120C158 /* AppleMusicScanner.swift */; };
+		F4453E720907CDC3E50EE0B9 /* PlayRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11C57487AF9CABF422FC6AA /* PlayRecord.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		08FE829F1D11C5D3EAE17225 /* AppleScriptRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleScriptRunner.swift; sourceTree = "<group>"; };
+		0D086C27B3F67165D147D436 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		35D4B5922E9F9BEE36C276D3 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
+		3E41CAC905AA73924D2E892A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		4FE4405BABF83231411BF932 /* MenuBarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarManager.swift; sourceTree = "<group>"; };
+		524347AEB62901CFCCDEF029 /* TrackInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackInfo.swift; sourceTree = "<group>"; };
+		5415AD455F2CC5C3DED7447E /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		570C2C8A9B04733F79066404 /* LaunchAtLoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginManager.swift; sourceTree = "<group>"; };
+		5C6A3383AF1375DD9120C158 /* AppleMusicScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleMusicScanner.swift; sourceTree = "<group>"; };
+		63B1A92A665EB6FA968E734A /* SyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncManager.swift; sourceTree = "<group>"; };
+		660A6EA32451F42D2FFA8C5B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		694AB6FE5DBB1D726C345C26 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
+		6C58AD6171CD2C43F0BCFAF8 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
+		6D35A874AF9553B2848199DF /* SpotifyScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotifyScanner.swift; sourceTree = "<group>"; };
+		7541FBFF245D03DA7AA64F11 /* SumarteRedMonitor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SumarteRedMonitor.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		88C7AE33A1F4C5CCF0F82F07 /* YouTubeScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeScanner.swift; sourceTree = "<group>"; };
+		89F16CE92123EF741B5CAF01 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
+		9357E23A5D6723C31F3D4339 /* PanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelController.swift; sourceTree = "<group>"; };
+		9790B773462560716186A3DE /* ConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigManager.swift; sourceTree = "<group>"; };
+		C0FC8AAF1FA55D3BFE320A3B /* SumarteRedMonitorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SumarteRedMonitorApp.swift; sourceTree = "<group>"; };
+		C2F3A7B2BB4C2379B8EEFBC6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C80C796E0977FE85AE030B3D /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		D9B03DA534F0983EF2815237 /* ScannerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerManager.swift; sourceTree = "<group>"; };
+		F11C57487AF9CABF422FC6AA /* PlayRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayRecord.swift; sourceTree = "<group>"; };
+		FA49E693999CED553693E491 /* SumarteRedMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SumarteRedMonitor.entitlements; sourceTree = "<group>"; };
+		FA7169D059E57B07EAAFD34F /* VLCScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VLCScanner.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7C72EEF0926CE5D55E5BC06F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7DD53147456487B7500B41A3 /* ServiceManagement.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0C1DA6B35E9516EEC04A1263 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				3E41CAC905AA73924D2E892A /* ContentView.swift */,
+				4FE4405BABF83231411BF932 /* MenuBarManager.swift */,
+				9357E23A5D6723C31F3D4339 /* PanelController.swift */,
+				0D086C27B3F67165D147D436 /* RootView.swift */,
+				694AB6FE5DBB1D726C345C26 /* SetupView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		4EAE2A006FB2D097D43F8064 /* Scanners */ = {
+			isa = PBXGroup;
+			children = (
+				5C6A3383AF1375DD9120C158 /* AppleMusicScanner.swift */,
+				6D35A874AF9553B2848199DF /* SpotifyScanner.swift */,
+				FA7169D059E57B07EAAFD34F /* VLCScanner.swift */,
+				88C7AE33A1F4C5CCF0F82F07 /* YouTubeScanner.swift */,
+			);
+			path = Scanners;
+			sourceTree = "<group>";
+		};
+		59063EAD74D5489AFE31D93A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				89F16CE92123EF741B5CAF01 /* ServiceManagement.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		5C7CFFE83B31CC238E1D9BC8 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				5415AD455F2CC5C3DED7447E /* AppConfig.swift */,
+				F11C57487AF9CABF422FC6AA /* PlayRecord.swift */,
+				524347AEB62901CFCCDEF029 /* TrackInfo.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		6624E45148880BDD2B47DD53 = {
+			isa = PBXGroup;
+			children = (
+				7735C1882DDF70693DBE6A83 /* SumarteRedMonitor */,
+				59063EAD74D5489AFE31D93A /* Frameworks */,
+				E0CAE112A511A8D0CE66B8FE /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7735C1882DDF70693DBE6A83 /* SumarteRedMonitor */ = {
+			isa = PBXGroup;
+			children = (
+				660A6EA32451F42D2FFA8C5B /* AppDelegate.swift */,
+				FA49E693999CED553693E491 /* SumarteRedMonitor.entitlements */,
+				C0FC8AAF1FA55D3BFE320A3B /* SumarteRedMonitorApp.swift */,
+				C2F3A7B2BB4C2379B8EEFBC6 /* Info.plist */,
+				DC9286061217429EAF01F39A /* Managers */,
+				5C7CFFE83B31CC238E1D9BC8 /* Models */,
+				4EAE2A006FB2D097D43F8064 /* Scanners */,
+				0C1DA6B35E9516EEC04A1263 /* UI */,
+				F729C0075B4BD45F2A1C226C /* Utilities */,
+			);
+			path = SumarteRedMonitor;
+			sourceTree = "<group>";
+		};
+		DC9286061217429EAF01F39A /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				C80C796E0977FE85AE030B3D /* APIClient.swift */,
+				9790B773462560716186A3DE /* ConfigManager.swift */,
+				6C58AD6171CD2C43F0BCFAF8 /* DatabaseManager.swift */,
+				570C2C8A9B04733F79066404 /* LaunchAtLoginManager.swift */,
+				35D4B5922E9F9BEE36C276D3 /* PermissionManager.swift */,
+				D9B03DA534F0983EF2815237 /* ScannerManager.swift */,
+				63B1A92A665EB6FA968E734A /* SyncManager.swift */,
+			);
+			path = Managers;
+			sourceTree = "<group>";
+		};
+		E0CAE112A511A8D0CE66B8FE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				7541FBFF245D03DA7AA64F11 /* SumarteRedMonitor.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F729C0075B4BD45F2A1C226C /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				08FE829F1D11C5D3EAE17225 /* AppleScriptRunner.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A8046E51868EDC7EBE77AAD7 /* SumarteRedMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0B05E601E54165C3CDD5C1 /* Build configuration list for PBXNativeTarget "SumarteRedMonitor" */;
+			buildPhases = (
+				E11139A31A755B6F68BD5847 /* Sources */,
+				7C72EEF0926CE5D55E5BC06F /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SumarteRedMonitor;
+			packageProductDependencies = (
+			);
+			productName = SumarteRedMonitor;
+			productReference = 7541FBFF245D03DA7AA64F11 /* SumarteRedMonitor.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A460D79E15FD190E8A4D524A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A8046E51868EDC7EBE77AAD7 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = C139BC1654CA8DAA19AB2D39 /* Build configuration list for PBXProject "SumarteRedMonitor" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 6624E45148880BDD2B47DD53;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = E0CAE112A511A8D0CE66B8FE /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A8046E51868EDC7EBE77AAD7 /* SumarteRedMonitor */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E11139A31A755B6F68BD5847 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2FAD4F115CA23E6449E4F23D /* APIClient.swift in Sources */,
+				1397495625E47A581D165758 /* AppConfig.swift in Sources */,
+				8C9DA16FAEEE244E920042BF /* AppDelegate.swift in Sources */,
+				F04F5D0F0A89F95B64E50DA8 /* AppleMusicScanner.swift in Sources */,
+				19F8DA20B656EB346758E4F1 /* AppleScriptRunner.swift in Sources */,
+				BC9810AA767117029CDE4EE6 /* SumarteRedMonitorApp.swift in Sources */,
+				0513207BC527E499F8D1F362 /* ConfigManager.swift in Sources */,
+				974F61DDF2CF04741C2FDF06 /* ContentView.swift in Sources */,
+				4340977E914885E0F2ED8685 /* DatabaseManager.swift in Sources */,
+				97D1A66B43A968837B26FB9C /* LaunchAtLoginManager.swift in Sources */,
+				4D5F6637A7ABCFE7CD3626A1 /* MenuBarManager.swift in Sources */,
+				5166155B7B2686316043B1A4 /* PanelController.swift in Sources */,
+				8C2D3560062E0D912B6AEC23 /* PermissionManager.swift in Sources */,
+				F4453E720907CDC3E50EE0B9 /* PlayRecord.swift in Sources */,
+				6856A0A9C197913B91BB2FDF /* RootView.swift in Sources */,
+				351EA9553DD3C37C0878F035 /* ScannerManager.swift in Sources */,
+				1651809F5C0765F34200D4A0 /* SetupView.swift in Sources */,
+				8F43FBE96207F648A12FA3FA /* SpotifyScanner.swift in Sources */,
+				362DE271A3FDBD3C508FD20B /* SyncManager.swift in Sources */,
+				779057F4EAB355C7BF3AA954 /* TrackInfo.swift in Sources */,
+				D9EEECB7D891587D29AD0658 /* VLCScanner.swift in Sources */,
+				4C673BFC7645F6A822C2E514 /* YouTubeScanner.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		6E57DEC6E227E9B95DF2C293 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SumarteRedMonitor/SumarteRedMonitor.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = SumarteRedMonitor/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cpmtracks.monitor;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		811C3490521DC5D54FFB4F65 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = SumarteRedMonitor;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		85F9E5282E69644E915D7CFB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = SumarteRedMonitor;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		DBA0B2B64E0ACC98EC80F087 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SumarteRedMonitor/SumarteRedMonitor.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = SumarteRedMonitor/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cpmtracks.monitor;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA0B05E601E54165C3CDD5C1 /* Build configuration list for PBXNativeTarget "SumarteRedMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DBA0B2B64E0ACC98EC80F087 /* Debug */,
+				6E57DEC6E227E9B95DF2C293 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C139BC1654CA8DAA19AB2D39 /* Build configuration list for PBXProject "SumarteRedMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				85F9E5282E69644E915D7CFB /* Debug */,
+				811C3490521DC5D54FFB4F65 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A460D79E15FD190E8A4D524A /* Project object */;
+}

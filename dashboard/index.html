@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CPM Monitor · Dashboard</title>
+<title>SUMARTE Red · Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#080B0F;--panel:#0F1318;--card:#141920;--border:#1C2230;
-  --borders:#253040;--fg:#E8EAF0;--dim:#7A8499;--faint:#3A4255;
-  --accent:#1A7FD4;--accent2:#0A5A9C;--ok:#2ECC8A;--warn:#F0A030;--bad:#E05555;
+  --bg:#F4F6F9;--panel:#FFFFFF;--card:#EEF1F6;--border:#DDE2EA;
+  --borders:#C8D0DC;--fg:#1A1E2A;--dim:#64748B;--faint:#94A3B8;
+  --accent:#E8560A;--accent2:#C04508;--ok:#16A34A;--warn:#D97706;--bad:#DC2626;
   --sidebar:260px;--topbar:52px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -21,7 +21,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'IBM Plex
 #login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000}
 #login-screen.hidden{display:none}
 .login-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:48px 40px;width:400px}
-.login-logo{background:linear-gradient(135deg,var(--accent) 0%,#0E5FA8 100%);border-radius:12px;padding:10px 18px;display:inline-flex;align-items:center;gap:10px;margin-bottom:28px;box-shadow:0 4px 16px rgba(26,127,212,.4)}
+.login-logo{background:linear-gradient(135deg,var(--accent) 0%,#C04508 100%);border-radius:12px;padding:10px 18px;display:inline-flex;align-items:center;gap:10px;margin-bottom:28px;box-shadow:0 4px 16px rgba(232,86,10,.3)}
 .login-logo .ll-icon{display:flex;align-items:center}
 .login-logo .ll-text{display:flex;flex-direction:column;line-height:1}
 .login-logo .ll-cpm{color:#fff;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;letter-spacing:.05em}
@@ -44,10 +44,10 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'IBM Plex
 #topbar{grid-column:1/-1;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px 0 0;z-index:20}
 .topbar-brand{width:var(--sidebar);flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 16px;transition:width .25s ease;overflow:hidden}
 #app.collapsed .topbar-brand{width:56px}
-.brand-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent) 0%,#0E5FA8 100%);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(26,127,212,.35)}
+.brand-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent) 0%,#C04508 100%);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(232,86,10,.3)}
 .brand-name{font-family:'Syne',sans-serif;white-space:nowrap;display:flex;flex-direction:column;gap:0px;line-height:1}
 .brand-name .bn-top{font-size:15px;font-weight:800;letter-spacing:.06em;color:var(--fg)}
-.brand-name .bn-sub{font-size:9px;font-weight:600;letter-spacing:.22em;color:var(--accent);text-transform:uppercase}
+.brand-name .bn-sub{font-size:9px;font-weight:600;letter-spacing:.22em;color:var(--accent2);text-transform:uppercase}
 #collapse-btn{background:transparent;border:none;color:var(--dim);cursor:pointer;padding:6px;border-radius:6px;margin-left:auto;flex-shrink:0}
 #collapse-btn:hover{color:var(--fg)}
 .topbar-center{flex:1;display:flex;align-items:center;padding:0 20px;gap:12px}
@@ -81,7 +81,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'IBM Plex
 .clear-btn{width:100%;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:8px;padding:7px;font-size:11px;cursor:pointer;font-family:inherit}
 
 /* MAIN */
-#main{overflow-y:auto}
+#main{overflow-y:auto;overflow-x:hidden;min-width:0}
 .view{display:none;padding:24px;flex-direction:column;gap:20px}
 .view.active{display:flex}
 
@@ -108,7 +108,7 @@ html,body{height:100%;background:var(--bg);color:var(--fg);font-family:'IBM Plex
 .chart-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:16px}
 
 /* TABLE */
-.table-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;min-width:0}
 .table-header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .table-title{font-size:13px;font-weight:600}
 .table-count{font-size:11px;color:var(--dim);font-family:'IBM Plex Mono',monospace}
@@ -142,8 +142,9 @@ td{padding:11px 18px;font-size:12px;color:var(--dim)}
 .empty{padding:48px;text-align:center;color:var(--faint);font-size:13px}
 
 /* ADMIN PANEL */
-.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:20px}
 .admin-section{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .admin-section-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
 .admin-section-title{font-size:13px;font-weight:600}
 .btn-add{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -205,7 +206,7 @@ body{padding-bottom:24px}
   <div class="login-card">
     <div><div class="login-logo">
       <div class="ll-icon"><svg width="20" height="18" viewBox="0 0 18 16" fill="none"><rect x="0" y="5" width="3" height="9" rx="1.5" fill="white"/><rect x="5" y="1" width="3" height="14" rx="1.5" fill="white"/><rect x="10" y="3" width="3" height="11" rx="1.5" fill="white" opacity=".85"/><rect x="15" y="6" width="3" height="7" rx="1.5" fill="white" opacity=".6"/></svg></div>
-      <div class="ll-text"><span class="ll-cpm">CPM</span><span class="ll-monitor">MONITOR</span></div>
+      <div class="ll-text"><span class="ll-cpm">SUMARTE</span><span class="ll-monitor">RED · ADMIN</span></div>
     </div></div>
     <div class="login-title">Bienvenido</div>
     <div class="login-sub">Ingresa con tus credenciales para continuar</div>
@@ -236,7 +237,7 @@ body{padding-bottom:24px}
 <header id="topbar">
   <div class="topbar-brand">
     <div class="brand-icon"><svg width="18" height="16" viewBox="0 0 18 16" fill="none"><rect x="0" y="5" width="3" height="9" rx="1.5" fill="white"/><rect x="5" y="1" width="3" height="14" rx="1.5" fill="white"/><rect x="10" y="3" width="3" height="11" rx="1.5" fill="white" opacity=".85"/><rect x="15" y="6" width="3" height="7" rx="1.5" fill="white" opacity=".6"/></svg></div>
-    <span class="brand-name"><span class="bn-top">CPM</span><span class="bn-sub">MONITOR</span></span>
+    <span class="brand-name"><span class="bn-top">SUMARTE</span><span class="bn-sub">RED · ADMIN</span></span>
     <button id="collapse-btn" onclick="toggleSidebar()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
     </button>
@@ -246,6 +247,7 @@ body{padding-bottom:24px}
       <button class="tab active" onclick="showView('reportes',this)">Reportes</button>
       <button class="tab" onclick="showView('bar',this)">Establecimiento</button>
       <button class="tab" onclick="showView('artista',this)">Artistas</button>
+      <button class="tab admin-tab" id="tab-catalogo" style="display:none" onclick="showView('catalogo',this)">🎵 Catálogo</button>
       <button class="tab admin-tab" id="tab-admin" style="display:none" onclick="showView('admin',this)">⚙ Admin</button>
     </div>
   </div>
@@ -328,7 +330,7 @@ body{padding-bottom:24px}
         <canvas id="chart-bars" height="220"></canvas>
       </div>
     </div>
-    <div class="table-card">
+    <div class="table-card" id="r-locales-card">
       <div class="table-header">
         <span class="table-title">Locales</span>
         <span class="table-count" id="r-loc-count">0</span>
@@ -338,7 +340,7 @@ body{padding-bottom:24px}
           <button class="pill" onclick="setRepFilter('active',this)">Con plays</button>
         </div>
       </div>
-      <table><thead>
+      <div class="tbl-scroll"><table><thead>
         <tr>
           <th onclick="sortRep(0)">Local</th><th onclick="sortRep(1)">ID</th><th onclick="sortRep(2)">Ciudad</th>
           <th onclick="sortRep(3)">Plays</th><th onclick="sortRep(4)">CPM</th>
@@ -348,14 +350,14 @@ body{padding-bottom:24px}
           <th colspan="8"><input class="tbl-filter" placeholder="Filtrar local, ID, ciudad…" oninput="repSearch=this.value;_pags.rep.page=0;renderRepTable()"></th>
         </tr>
       </thead>
-      <tbody id="r-tbody"><tr><td colspan="8" class="empty">Aplica filtros para ver datos</td></tr></tbody></table>
+      <tbody id="r-tbody"><tr><td colspan="8" class="empty">Aplica filtros para ver datos</td></tr></tbody></table></div>
       <div id="pag-rep"></div>
     </div>
   </div>
 
   <!-- ESTABLECIMIENTO -->
   <div id="view-bar" class="view">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div id="bar-selector-row" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-size:12px;color:var(--dim)">Establecimiento:</span>
       <select id="bar-local-dd" style="background:var(--card);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:7px 12px;font-size:12px;font-family:inherit;outline:none;min-width:220px" onchange="barDdChanged()">
         <option value="">— Seleccionar —</option>
@@ -391,12 +393,12 @@ body{padding-bottom:24px}
           <button class="pill" onclick="setBarFilter('unpaid',this)">No pagadas</button>
         </div>
       </div>
-      <table><thead><tr>
+      <div class="tbl-scroll"><table><thead><tr>
         <th onclick="sortBar(0)">Artista</th><th onclick="sortBar(1)">Canción</th><th onclick="sortBar(2)">ISRC</th>
         <th onclick="sortBar(3)">Fuente</th><th onclick="sortBar(4)">Veces</th><th onclick="sortBar(5)">% Reprod.</th>
         <th onclick="sortBar(6)">Se paga</th><th onclick="sortBar(7)">Ingreso CPM</th><th onclick="sortBar(8)">Ingreso estab.</th>
       </tr></thead>
-      <tbody id="b-tbody"><tr><td colspan="9" class="empty">Selecciona un establecimiento</td></tr></tbody></table>
+      <tbody id="b-tbody"><tr><td colspan="9" class="empty">Selecciona un establecimiento</td></tr></tbody></table></div>
       <div id="pag-bar"></div>
     </div>
   </div>
@@ -418,8 +420,8 @@ body{padding-bottom:24px}
     </div>
     <div class="table-card">
       <div class="table-header"><span class="table-title">Por local</span><span class="table-count" id="ar-count">0</span></div>
-      <table><thead><tr><th>Local</th><th>ID</th><th>Ciudad</th><th>Veces</th><th>Se pagan</th><th>% Promedio</th></tr></thead>
-      <tbody id="ar-tbody"><tr><td colspan="6" class="empty">Busca por artista o ISRC</td></tr></tbody></table>
+      <div class="tbl-scroll"><table><thead><tr><th>Local</th><th>ID</th><th>Ciudad</th><th>Veces</th><th>Se pagan</th><th>% Promedio</th></tr></thead>
+      <tbody id="ar-tbody"><tr><td colspan="6" class="empty">Busca por artista o ISRC</td></tr></tbody></table></div>
     </div>
   </div>
 
@@ -433,13 +435,13 @@ body{padding-bottom:24px}
           <span class="admin-section-title">Locales / Establecimientos</span>
           <button class="btn-add" onclick="openModalLocal()">+ Nuevo local</button>
         </div>
-        <table>
+        <div class="tbl-scroll"><table>
           <thead>
             <tr><th>Nombre</th><th>ID</th><th>Ciudad</th><th>Tipo</th><th>Estado</th><th>Monitor</th><th></th></tr>
             <tr class="filter-row"><th colspan="7"><input id="flt-loc" class="tbl-filter" placeholder="Filtrar…" oninput="_pags.admin_loc.page=0;_renderAdminLocales()"></th></tr>
           </thead>
           <tbody id="admin-locales-tbody"><tr><td colspan="7" class="empty">Cargando...</td></tr></tbody>
-        </table>
+        </table></div>
         <div id="pag-admin_loc"></div>
       </div>
 
@@ -449,31 +451,15 @@ body{padding-bottom:24px}
           <span class="admin-section-title">Usuarios</span>
           <button class="btn-add" onclick="openModalUsuario()">+ Nuevo usuario</button>
         </div>
-        <table>
+        <div class="tbl-scroll"><table>
           <thead>
             <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Establecimiento</th><th>Estado</th><th></th></tr>
             <tr class="filter-row"><th colspan="6"><input id="flt-usr" class="tbl-filter" placeholder="Filtrar nombre, email o establecimiento…" oninput="_pags.admin_usr.page=0;_renderAdminUsuarios()"></th></tr>
           </thead>
           <tbody id="admin-usuarios-tbody"><tr><td colspan="6" class="empty">Cargando...</td></tr></tbody>
-        </table>
+        </table></div>
         <div id="pag-admin_usr"></div>
       </div>
-    </div>
-
-    <!-- CATÁLOGO CPM -->
-    <div class="admin-section" style="grid-column:1/-1">
-      <div class="admin-section-header">
-        <span class="admin-section-title">🎵 Catálogo CPM — Canciones que pagan</span>
-        <button class="btn-add" onclick="openModalCatalogo()">+ Agregar canción</button>
-      </div>
-      <table>
-        <thead>
-          <tr><th>Artista</th><th>Título</th><th>ISRC</th><th>PVP (artista)</th><th>Valor establecimiento</th><th>Estado</th><th></th></tr>
-          <tr class="filter-row"><th colspan="7"><input id="flt-cat" class="tbl-filter" placeholder="Filtrar artista, título o ISRC…" oninput="_pags.admin_cat.page=0;_renderAdminCatalogo()"></th></tr>
-        </thead>
-        <tbody id="admin-catalogo-tbody"><tr><td colspan="7" class="empty">Cargando...</td></tr></tbody>
-      </table>
-      <div id="pag-admin_cat"></div>
     </div>
 
     <!-- MENSAJES PUSH -->
@@ -482,7 +468,7 @@ body{padding-bottom:24px}
         <span class="admin-section-title">📣 Mensajes push a establecimientos</span>
         <button class="btn-add" onclick="openModalMensaje()">+ Nuevo mensaje</button>
       </div>
-      <table>
+      <div class="tbl-scroll"><table>
         <thead>
           <tr>
             <th style="width:50px">Img</th><th>Título</th><th>Destinatario</th><th>Creado</th><th>Vence</th><th>Leídos</th><th>Estado</th><th></th>
@@ -490,8 +476,28 @@ body{padding-bottom:24px}
           <tr class="filter-row"><th colspan="8"><input id="flt-msg" class="tbl-filter" placeholder="Filtrar por título…" oninput="_pags.admin_msg.page=0;_renderAdminMensajes()"></th></tr>
         </thead>
         <tbody id="admin-mensajes-tbody"><tr><td colspan="8" class="empty">Cargando...</td></tr></tbody>
-      </table>
+      </table></div>
       <div id="pag-admin_msg"></div>
+    </div>
+  </div>
+
+  <!-- VIEW: CATÁLOGO CPM -->
+  <div id="view-catalogo" class="view">
+    <div class="admin-grid">
+      <div class="admin-section" style="grid-column:1/-1">
+        <div class="admin-section-header">
+          <span class="admin-section-title">🎵 Catálogo ACPM — Canciones que pagan</span>
+          <button class="btn-add" id="btn-add-cancion" onclick="openModalCatalogo()">+ Agregar canción</button>
+        </div>
+        <div class="tbl-scroll"><table>
+          <thead>
+            <tr><th></th><th>Artista</th><th>Título</th><th>ISRC</th><th>Género</th><th>PVP (artista)</th><th>Valor estab.</th><th>Estado</th><th></th></tr>
+            <tr class="filter-row"><th colspan="9"><input id="flt-cat" class="tbl-filter" placeholder="Filtrar artista, título, ISRC o género…" oninput="_pags.admin_cat.page=0;_renderAdminCatalogo()"></th></tr>
+          </thead>
+          <tbody id="admin-catalogo-tbody"><tr><td colspan="9" class="empty">Cargando...</td></tr></tbody>
+        </table></div>
+        <div id="pag-admin_cat"></div>
+      </div>
     </div>
   </div>
 
@@ -553,9 +559,14 @@ body{padding-bottom:24px}
         <input type="tel" id="ml-telefono" placeholder="+57 300 000 0000">
       </div>
     </div>
-    <div id="ml-usuarios-section" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Usuarios vinculados</div>
-      <div id="ml-usuarios-list" style="display:flex;flex-direction:column;gap:6px;font-size:12px"></div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div class="mfield">
+        <label style="color:var(--accent)">Usuario del establecimiento</label>
+        <select id="ml-usuario">
+          <option value="">— Sin usuario asignado —</option>
+        </select>
+        <div class="hint">El usuario que accede al panel con las credenciales de este local</div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-s" onclick="closeModal('modal-local')">Cancelar</button>
@@ -819,16 +830,22 @@ function iniciarApp(){
   document.getElementById('user-nombre').textContent = SESSION.nombre;
   document.getElementById('user-rol').textContent = SESSION.rol;
 
-  // Mostrar tab admin solo para superadmin y cpm_interno
+  // Mostrar tabs admin/catalogo según rol
   const tabAdmin = document.getElementById('tab-admin');
+  const tabCatalogo = document.getElementById('tab-catalogo');
   if(['superadmin','cpm_interno'].includes(SESSION.rol)){
     tabAdmin.style.display = '';
+    tabCatalogo.style.display = '';
   }
 
-  // Si es establecimiento, ocultar filtro de locales y fijar su local
+  // Restricciones para rol establecimiento
   if(SESSION.rol === 'establecimiento'){
-    document.getElementById('f-local-field').style.display = 'none';
+    tabCatalogo.style.display = '';                                        // ver catálogo
+    document.getElementById('f-local-field').style.display = 'none';      // ocultar filtro locales en sidebar
     document.getElementById('f-local').value = SESSION.id_local;
+    document.getElementById('r-locales-card').style.display = 'none';     // ocultar tabla locales en Reportes
+    document.getElementById('bar-selector-row').style.display = 'none';   // ocultar selector en Establecimiento
+    document.getElementById('btn-add-cancion').style.display = 'none';    // ocultar botón agregar canción
   }
 
   loadConfig();
@@ -915,6 +932,12 @@ function showView(name,btn){
   document.getElementById('view-'+name).classList.add('active');
   btn.classList.add('active');
   if(name==='admin') loadAdmin();
+  if(name==='catalogo') loadAdminCatalogo();
+  // Establecimiento: auto-cargar su propio local al entrar a la vista
+  if(name==='bar' && SESSION?.rol==='establecimiento'){
+    document.getElementById('bar-local-dd').value = SESSION.id_local;
+    loadBar();
+  }
 }
 
 // ── MODAL ─────────────────────────────────────────────────────────
@@ -1272,7 +1295,7 @@ function _renderAdminUsuarios(){
       <td class="td-f">${allLocales.find(l=>l.id_local===u.id_local)?.nombre||u.id_local||'—'}</td>
       <td>${u.activo?'<span class="badge badge-ok">Activo</span>':'<span class="badge badge-bad">Inactivo</span>'}</td>
       <td style="display:flex;gap:6px">
-        <button class="btn-sm" onclick='editarUsuario(${JSON.stringify(u)})'>Editar</button>
+        <button class="btn-sm" onclick='editarUsuario(${JSON.stringify(u).replace(/'/g,"&#39;")})'>Editar</button>
         <button class="btn-sm danger" onclick="eliminarUsuario(${u.id},'${(u.email||'').replace(/'/g,'')}')">Eliminar</button>
       </td>
     </tr>`).join('')||'<tr><td colspan="6" class="empty">Sin usuarios</td></tr>';
@@ -1284,11 +1307,15 @@ function openModalLocal(){
   ['ml-id','ml-nombre','ml-ciudad','ml-zona','ml-email','ml-telefono','ml-direccion','ml-contacto'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ml-pais').value='Colombia';
   document.getElementById('ml-tipo').value='Bar / Pub';
-  document.getElementById('ml-usuarios-section').style.display='none';
+  // Poblar dropdown de usuarios
+  const sel=document.getElementById('ml-usuario');
+  sel.innerHTML='<option value="">— Sin usuario asignado —</option>'
+    +(_adminUsersData||[]).filter(u=>u.rol==='establecimiento').map(u=>`<option value="${u.id}">${u.nombre||u.email} (${u.email})</option>`).join('');
+  sel.value='';
   document.getElementById('modal-local').classList.add('open');
 }
 
-async function editarLocal(l){
+function editarLocal(l){
   document.getElementById('modal-local-title').textContent='Editar establecimiento';
   document.getElementById('ml-id').value=l.id_local||'';
   document.getElementById('ml-nombre').value=l.nombre||'';
@@ -1300,25 +1327,12 @@ async function editarLocal(l){
   document.getElementById('ml-contacto').value=l.contacto||'';
   document.getElementById('ml-email').value=l.email||'';
   document.getElementById('ml-telefono').value=l.telefono||'';
-  // Cargar usuarios vinculados
-  try{
-    const r=await fetch(`${API}/admin/usuarios`,{headers:authHeader()});
-    const d=await r.json();
-    const usuarios=(d.usuarios||d||[]).filter(u=>u.id_local===l.id_local);
-    const sec=document.getElementById('ml-usuarios-section');
-    const lst=document.getElementById('ml-usuarios-list');
-    if(usuarios.length){
-      sec.style.display='';
-      lst.innerHTML=usuarios.map(u=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;background:var(--panel);border-radius:6px">
-        <span style="flex:1;color:var(--fg)">${u.nombre||u.email}</span>
-        <span class="td-f">${u.email}</span>
-        <span class="badge ${u.activo?'badge-ok':'badge-bad'}">${u.activo?'Activo':'Inactivo'}</span>
-      </div>`).join('');
-    }else{
-      sec.style.display='';
-      lst.innerHTML='<div style="color:var(--faint);font-size:12px">Sin usuarios vinculados</div>';
-    }
-  }catch(e){document.getElementById('ml-usuarios-section').style.display='none';}
+  // Poblar dropdown y pre-seleccionar usuario vinculado
+  const sel=document.getElementById('ml-usuario');
+  sel.innerHTML='<option value="">— Sin usuario asignado —</option>'
+    +(_adminUsersData||[]).filter(u=>u.rol==='establecimiento').map(u=>`<option value="${u.id}">${u.nombre||u.email} (${u.email})</option>`).join('');
+  const vinculado=(_adminUsersData||[]).find(u=>String(u.id_local)===String(l.id_local));
+  sel.value=vinculado?String(vinculado.id):'';
   document.getElementById('modal-local').classList.add('open');
 }
 
@@ -1345,9 +1359,28 @@ async function guardarLocal(){
     }
     const d=await r.json();
     if(!r.ok){alert(d.error||'Error guardando');return;}
+    // Vincular / desvincular usuario
+    const finalId=id||(d.id_local||d.id||'');
+    const selUid=document.getElementById('ml-usuario').value;
+    // Desvincular usuario previo si cambió
+    if(id){
+      const prevUser=(_adminUsersData||[]).find(u=>String(u.id_local)===String(id)&&String(u.id)!==String(selUid));
+      if(prevUser){
+        await fetch(`${API}/admin/usuarios/${prevUser.id}`,{method:'PUT',headers:authHeader(),
+          body:JSON.stringify({nombre:prevUser.nombre,rol:prevUser.rol,id_local:''})});
+      }
+    }
+    // Vincular nuevo usuario seleccionado
+    if(selUid){
+      const uData=(_adminUsersData||[]).find(u=>String(u.id)===String(selUid));
+      if(uData){
+        await fetch(`${API}/admin/usuarios/${selUid}`,{method:'PUT',headers:authHeader(),
+          body:JSON.stringify({nombre:uData.nombre,rol:uData.rol,id_local:finalId})});
+      }
+    }
     closeModal('modal-local');
     await loadLocalesDropdown();
-    await loadAdminLocales();
+    await Promise.all([loadAdminLocales(),loadAdminUsuarios()]);
     setStatus(id?'Local actualizado':'Local creado');
   }catch(e){alert('Error de conexión');}
 }
@@ -1560,32 +1593,61 @@ function setStatus(msg){document.getElementById('s-msg').textContent=msg;documen
 let _adminCatalogoData=[];
 async function loadAdminCatalogo(){
   try{
-    const r=await fetch(`${API}/admin/catalogo`,{headers:authHeader()});
+    const esEstab=SESSION?.rol==='establecimiento';
+    const endpoint=esEstab?`${API}/v1/catalogo`:`${API}/admin/catalogo`;
+    const r=await fetch(endpoint,{headers:authHeader()});
     const d=await r.json();
     _adminCatalogoData=Array.isArray(d)?d:(d.canciones||[]);
     _renderAdminCatalogo();
-  }catch(e){document.getElementById('admin-catalogo-tbody').innerHTML='<tr><td colspan="7" class="empty">Error cargando</td></tr>';}
+  }catch(e){document.getElementById('admin-catalogo-tbody').innerHTML='<tr><td colspan="8" class="empty">Error cargando</td></tr>';}
 }
 function _renderAdminCatalogo(){
   const pg=_pags.admin_cat;
   const q=(document.getElementById('flt-cat')?.value||'').toLowerCase();
-  const all=_adminCatalogoData;
-  const rows=q?all.filter(s=>(s.artista||'').toLowerCase().includes(q)||(s.titulo||'').toLowerCase().includes(q)||(s.isrc||'').toLowerCase().includes(q)):all;
+  const esEstab=SESSION?.rol==='establecimiento';
+  const all=esEstab?_adminCatalogoData.filter(s=>s.activo):_adminCatalogoData;
+  const rows=q?all.filter(s=>(s.artista||'').toLowerCase().includes(q)||(s.titulo||'').toLowerCase().includes(q)||(s.isrc||'').toLowerCase().includes(q)||(s.genero||'').toLowerCase().includes(q)):all;
   const slice=pg.size>0?rows.slice(pg.page*pg.size,(pg.page+1)*pg.size):rows;
-  document.getElementById('admin-catalogo-tbody').innerHTML=slice.map(s=>`
+  const colSpan=esEstab?7:9;
+  const spotifyBtn=s=>s.spotify_url?`<a class="btn-sm" href="${s.spotify_url}" target="_blank" style="background:#1DB954;color:#000;border-color:#1DB954;text-decoration:none;display:inline-flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>Spotify</a>`:'—';
+  const youtubeBtn=s=>s.youtube_url?`<a class="btn-sm" href="${s.youtube_url}" target="_blank" style="background:#FF0000;color:#fff;border-color:#FF0000;text-decoration:none;display:inline-flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>YouTube</a>`:'—';
+  // Vista establecimiento: columnas reducidas + solo lectura
+  if(esEstab){
+    // Actualizar encabezados para vista estab
+    const thead=document.querySelector('#view-catalogo table thead tr:first-child');
+    if(thead) thead.innerHTML='<th>Artista</th><th>Título</th><th>ISRC</th><th>Género</th><th>Valor estab.</th><th>Spotify</th><th>YouTube</th>';
+    const filterTh=document.querySelector('#view-catalogo .filter-row th');
+    if(filterTh) filterTh.setAttribute('colspan','7');
+    document.getElementById('admin-catalogo-tbody').innerHTML=slice.map(s=>`
     <tr>
       <td class="td-f">${s.artista}</td>
-      <td class="td-f">${s.titulo}</td>
+      <td class="td-p">${s.titulo}</td>
       <td class="td-f mono" style="color:var(--accent)">${s.isrc||'—'}</td>
+      <td class="td-f">${s.genero?`<span class="badge" style="background:var(--panel);color:var(--dim);border:1px solid var(--border)">${s.genero}</span>`:'—'}</td>
+      <td class="mono td-ok">$${(s.valor_establecimiento||500).toLocaleString('es-CO')}</td>
+      <td>${spotifyBtn(s)}</td>
+      <td>${youtubeBtn(s)}</td>
+    </tr>`).join('')||`<tr><td colspan="7" class="empty">Sin canciones en el catálogo</td></tr>`;
+  }else{
+    document.getElementById('admin-catalogo-tbody').innerHTML=slice.map(s=>`
+    <tr>
+      <td><div style="width:64px;height:36px;border-radius:5px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;background:var(--card)">${s.thumbnail_url?`<img src="${s.thumbnail_url}" style="width:64px;height:36px;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=color:var(--faint);font-size:16px>🎵</span>'">`:'<span style="color:var(--faint);font-size:16px">🎵</span>'}</div></td>
+      <td class="td-f">${s.artista}</td>
+      <td class="td-f">${s.titulo}${s.spotify_url?` <a href="${s.spotify_url}" target="_blank" style="color:var(--accent);font-size:11px" title="Spotify">♫</a>`:''}${s.youtube_url?` <a href="${s.youtube_url}" target="_blank" style="color:#f55;font-size:11px" title="YouTube">▶</a>`:''}</td>
+      <td class="td-f mono" style="color:var(--accent)">${s.isrc||'—'}</td>
+      <td class="td-f">${s.genero?`<span class="badge" style="background:var(--panel);color:var(--dim);border:1px solid var(--border)">${s.genero}</span>`:'—'}</td>
       <td class="mono td-warn">$${(s.pvp||3000).toLocaleString('es-CO')}</td>
       <td class="mono td-ok">$${(s.valor_establecimiento||500).toLocaleString('es-CO')}</td>
       <td>${s.activo?'<span class="badge badge-ok">Activa</span>':'<span class="badge badge-bad">Inactiva</span>'}</td>
-      <td style="display:flex;gap:6px">
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn-sm" onclick='editarCancion(${JSON.stringify(s)})'>Editar</button>
+        ${s.cdn_url?`<a class="btn-sm" href="${s.cdn_url}" target="_blank" style="background:var(--accent);color:#fff;border-color:var(--accent);text-decoration:none" title="Ver en CDN">▶ CDN</a>`:''}
+        ${s.spotify_url?`<a class="btn-sm" href="${s.spotify_url}" target="_blank" style="background:#1DB954;color:#000;border-color:#1DB954;text-decoration:none;display:inline-flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>Spotify</a>`:''}
         <button class="btn-sm ${s.activo?'danger':'ok'}" onclick="toggleCancion(${s.id},'${(s.titulo||'').replace(/'/g,'')}')">${s.activo?'Desactivar':'Activar'}</button>
         <button class="btn-sm danger" onclick="deleteCancion(${s.id},'${(s.titulo||'').replace(/'/g,'')}')">Eliminar</button>
       </td>
-    </tr>`).join('')||'<tr><td colspan="7" class="empty">Sin canciones en el catálogo</td></tr>';
+    </tr>`).join('')||'<tr><td colspan="9" class="empty">Sin canciones en el catálogo</td></tr>';
+  }
   renderPag('admin_cat',rows.length);
 }
 function openModalCatalogo(){
@@ -1593,8 +1655,13 @@ function openModalCatalogo(){
   document.getElementById('mc-artista').value='';
   document.getElementById('mc-titulo').value='';
   document.getElementById('mc-isrc').value='';
+  document.getElementById('mc-genero').value='';
   document.getElementById('mc-pvp').value='3000';
   document.getElementById('mc-valor-estab').value='500';
+  document.getElementById('mc-spotify-url').value='';
+  document.getElementById('mc-youtube-url').value='';
+  document.getElementById('mc-cdn-url').value='';
+  document.getElementById('mc-thumbnail-url').value='';
   document.getElementById('mc-submit-btn').textContent='Agregar canción';
   document.getElementById('modal-catalogo-title').textContent='Nueva canción';
   document.getElementById('modal-catalogo').classList.add('open');
@@ -1604,8 +1671,13 @@ function editarCancion(s){
   document.getElementById('mc-artista').value=s.artista||'';
   document.getElementById('mc-titulo').value=s.titulo||'';
   document.getElementById('mc-isrc').value=s.isrc||'';
+  document.getElementById('mc-genero').value=s.genero||'';
   document.getElementById('mc-pvp').value=s.pvp||3000;
   document.getElementById('mc-valor-estab').value=s.valor_establecimiento||500;
+  document.getElementById('mc-spotify-url').value=s.spotify_url||'';
+  document.getElementById('mc-youtube-url').value=s.youtube_url||'';
+  document.getElementById('mc-cdn-url').value=s.cdn_url||'';
+  document.getElementById('mc-thumbnail-url').value=s.thumbnail_url||'';
   document.getElementById('mc-submit-btn').textContent='Guardar cambios';
   document.getElementById('modal-catalogo-title').textContent='Editar canción';
   document.getElementById('modal-catalogo').classList.add('open');
@@ -1616,10 +1688,17 @@ async function guardarCancion(){
     artista:document.getElementById('mc-artista').value.trim(),
     titulo:document.getElementById('mc-titulo').value.trim(),
     isrc:document.getElementById('mc-isrc').value.trim(),
+    genero:document.getElementById('mc-genero').value.trim(),
     pvp:parseInt(document.getElementById('mc-pvp').value)||3000,
     valor_establecimiento:parseInt(document.getElementById('mc-valor-estab').value)||500,
+    spotify_url:document.getElementById('mc-spotify-url').value.trim(),
+    youtube_url:document.getElementById('mc-youtube-url').value.trim(),
+    cdn_url:document.getElementById('mc-cdn-url').value.trim(),
+    thumbnail_url:document.getElementById('mc-thumbnail-url').value.trim(),
   };
   if(!body.artista||!body.titulo){alert('Artista y título son requeridos');return;}
+  if(!body.genero){alert('El género es requerido');return;}
+  if(body.spotify_url&&!body.spotify_url.startsWith('https://open.spotify.com/')){alert('El link de Spotify debe comenzar con https://open.spotify.com/');return;}
   try{
     const url=id?`${API}/admin/catalogo/${id}`:`${API}/admin/catalogo`;
     const method=id?'PUT':'POST';
@@ -1632,11 +1711,12 @@ async function guardarCancion(){
   }catch(e){alert('Error de conexión');}
 }
 async function toggleCancion(id, titulo){
-  const nuevoEstado=_adminCatalogoData.find(s=>s.id===id)?.activo?0:1;
+  const song=_adminCatalogoData.find(s=>s.id===id);
+  const nuevoEstado=song?.activo?0:1;
   const accion=nuevoEstado?'activar':'desactivar';
   if(!confirm(`¿${accion.charAt(0).toUpperCase()+accion.slice(1)} "${titulo}"?`))return;
   try{
-    const r=await fetch(`${API}/admin/catalogo/${id}`,{method:'PUT',headers:authHeader(),body:JSON.stringify({activo:nuevoEstado})});
+    const r=await fetch(`${API}/admin/catalogo/${id}`,{method:'PUT',headers:authHeader(),body:JSON.stringify({...song,activo:nuevoEstado})});
     const d=await r.json();
     if(!r.ok){alert(d.error||'Error');return;}
     await loadAdminCatalogo();
@@ -1653,11 +1733,129 @@ async function deleteCancion(id, titulo){
     setStatus(`Canción eliminada`);
   }catch(e){alert('Error de conexión');}
 }
+
+// Convierte cualquier imagen a WebP 16:9 (960×540) usando Canvas — sin tocar el servidor
+async function _convertirImagenWebp(file){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const W = 960, H = 540; // 16:9
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      // Recortar al centro manteniendo aspecto 16:9
+      const imgRatio = img.width / img.height;
+      const targetRatio = W / H;
+      let sx=0, sy=0, sw=img.width, sh=img.height;
+      if(imgRatio > targetRatio){
+        sw = img.height * targetRatio;
+        sx = (img.width - sw) / 2;
+      } else {
+        sh = img.width / targetRatio;
+        sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+      canvas.toBlob(blob => {
+        if(blob) resolve(blob);
+        else reject(new Error('No se pudo convertir a WebP'));
+      }, 'image/webp', 0.85);
+    };
+    img.onerror = () => reject(new Error('No se pudo leer la imagen'));
+    img.src = url;
+  });
+}
+
+async function subirArchivoR2(input, targetFieldId, progressDivId){
+  const file = input.files[0];
+  if(!file) return;
+  const suffix = progressDivId.includes('thumb') ? 'thumb' : 'video';
+  const progressDiv = document.getElementById(progressDivId);
+  const bar = document.getElementById(`mc-upload-bar-${suffix}`);
+  const label = document.getElementById(`mc-upload-label-${suffix}`);
+  progressDiv.style.display = 'block';
+  bar.style.width = '5%';
+
+  // Para imágenes: convertir a WebP 16:9 960×540 antes de subir
+  const esImagen = file.type.startsWith('image/');
+  let uploadBlob = file;
+  let uploadName = file.name;
+  let uploadType = file.type;
+
+  if(esImagen){
+    label.textContent = 'Convirtiendo a WebP 16:9...';
+    try{
+      uploadBlob = await _convertirImagenWebp(file);
+      uploadType = 'image/webp';
+      uploadName = file.name.replace(/\.[^.]+$/, '') + '.webp';
+      const kb = Math.round(uploadBlob.size/1024);
+      label.textContent = `Convertida → ${kb} KB WebP · solicitando URL...`;
+    }catch(e){
+      label.textContent = `Error convirtiendo: ${e.message}`;
+      bar.style.background='var(--bad)';
+      setTimeout(()=>{ progressDiv.style.display='none'; bar.style.background='var(--accent)'; },3000);
+      return;
+    }
+  } else {
+    label.textContent = 'Solicitando URL de subida...';
+  }
+
+  try{
+    // Subir al servidor vía multipart — el servidor sube a R2
+    const sizeMb = (uploadBlob.size/1024/1024).toFixed(1);
+    label.textContent = `Subiendo ${sizeMb} MB...`;
+    const formData = new FormData();
+    formData.append('file', new File([uploadBlob], uploadName, {type: uploadType}));
+
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API}/admin/upload`);
+      // Agregar token de auth (sin Content-Type, el browser lo pone con boundary)
+      const tok = SESSION?.token || '';
+      if(tok) xhr.setRequestHeader('X-Session-Token', tok);
+      xhr.upload.onprogress = (e) => {
+        if(e.lengthComputable){
+          const pct = Math.round(e.loaded/e.total*100);
+          bar.style.width = pct + '%';
+          label.textContent = `Subiendo... ${pct}%`;
+        }
+      };
+      xhr.onload = () => {
+        if(xhr.status===200){
+          const d = JSON.parse(xhr.responseText);
+          if(d.cdn_url){
+            document.getElementById(targetFieldId).value = d.cdn_url;
+            resolve(d);
+          } else {
+            reject(new Error(d.error||'Sin URL en respuesta'));
+          }
+        } else {
+          try{ reject(new Error(JSON.parse(xhr.responseText).error||`HTTP ${xhr.status}`)); }
+          catch{ reject(new Error(`HTTP ${xhr.status}`)); }
+        }
+      };
+      xhr.onerror = () => reject(new Error('Error de red'));
+      xhr.send(formData);
+    });
+
+    bar.style.width = '100%';
+    label.textContent = esImagen
+      ? `✓ WebP 16:9 (960×540) — ${Math.round(uploadBlob.size/1024)} KB`
+      : `✓ Subido — ${sizeMb} MB`;
+    setTimeout(() => { progressDiv.style.display='none'; }, 3000);
+    input.value = '';
+  }catch(e){
+    label.textContent = `Error: ${e.message}`;
+    bar.style.background = 'var(--bad)';
+    setTimeout(() => { progressDiv.style.display='none'; bar.style.background='var(--accent)'; }, 3000);
+  }
+}
 </script>
 
 <!-- MODAL CATÁLOGO -->
 <div class="overlay" id="modal-catalogo">
-  <div class="modal" style="width:500px">
+  <div class="modal" style="width:540px">
     <h3 id="modal-catalogo-title">Nueva canción</h3>
     <input type="hidden" id="mc-id">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -1669,9 +1867,33 @@ async function deleteCancion(id, titulo){
         <label>Título</label>
         <input type="text" id="mc-titulo" placeholder="Ej: PROVENZA">
       </div>
-      <div class="mfield" style="grid-column:1/-1">
-        <label>ISRC <span style="color:var(--dim);font-weight:400;font-size:10px">(opcional si aún no se tiene)</span></label>
+      <div class="mfield">
+        <label>ISRC <span style="color:var(--dim);font-weight:400;font-size:10px">(opcional)</span></label>
         <input type="text" id="mc-isrc" placeholder="Ej: USUM72205907" style="font-family:'IBM Plex Mono',monospace">
+      </div>
+      <div class="mfield">
+        <label>Género <span style="color:var(--danger);font-size:10px">*</span></label>
+        <select id="mc-genero">
+          <option value="">— Seleccionar —</option>
+          <option value="Reggaeton">Reggaeton</option>
+          <option value="Pop">Pop</option>
+          <option value="Rock">Rock</option>
+          <option value="Salsa">Salsa</option>
+          <option value="Cumbia">Cumbia</option>
+          <option value="Vallenato">Vallenato</option>
+          <option value="Hip Hop">Hip Hop</option>
+          <option value="Trap">Trap</option>
+          <option value="Electrónica">Electrónica</option>
+          <option value="R&B">R&amp;B</option>
+          <option value="Balada">Balada</option>
+          <option value="Latin Pop">Latin Pop</option>
+          <option value="Urbano">Urbano</option>
+          <option value="Merengue">Merengue</option>
+          <option value="Bachata">Bachata</option>
+          <option value="Latin">Latin</option>
+          <option value="Popular">Popular</option>
+          <option value="Otro">Otro</option>
+        </select>
       </div>
       <div class="mfield">
         <label>PVP — Artista paga (COP)</label>
@@ -1682,6 +1904,47 @@ async function deleteCancion(id, titulo){
         <label>Valor establecimiento (COP)</label>
         <input type="number" id="mc-valor-estab" value="500" min="0" step="100">
         <div class="hint">16,67% del PVP = $500</div>
+      </div>
+      <div class="mfield" style="grid-column:1/-1">
+        <label>Link Spotify <span style="color:var(--dim);font-weight:400;font-size:10px">(opcional)</span></label>
+        <input type="url" id="mc-spotify-url" placeholder="https://open.spotify.com/track/...">
+      </div>
+      <div class="mfield" style="grid-column:1/-1">
+        <label>Link YouTube <span style="color:var(--dim);font-weight:400;font-size:10px">(opcional)</span></label>
+        <input type="url" id="mc-youtube-url" placeholder="https://www.youtube.com/watch?v=...">
+      </div>
+      <!-- Upload directo a R2 CDN -->
+      <div class="mfield" style="grid-column:1/-1">
+        <label>Video / Audio CDN</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="url" id="mc-cdn-url" placeholder="https://pub-...r2.dev/cancion.mp4" style="flex:1">
+          <label class="btn btn-s" style="cursor:pointer;white-space:nowrap;margin:0" title="Subir archivo al CDN">
+            ↑ Subir
+            <input type="file" id="mc-file-video" accept="video/mp4,audio/mpeg,audio/mp4" style="display:none" onchange="subirArchivoR2(this,'mc-cdn-url','mc-upload-progress-video')">
+          </label>
+        </div>
+        <div id="mc-upload-progress-video" style="display:none;margin-top:6px">
+          <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
+            <div id="mc-upload-bar-video" style="height:100%;background:var(--accent);width:0%;transition:width .2s"></div>
+          </div>
+          <span id="mc-upload-label-video" style="font-size:11px;color:var(--dim)">Subiendo...</span>
+        </div>
+      </div>
+      <div class="mfield" style="grid-column:1/-1">
+        <label>Thumbnail CDN</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="url" id="mc-thumbnail-url" placeholder="https://pub-...r2.dev/imagen.jpg" style="flex:1">
+          <label class="btn btn-s" style="cursor:pointer;white-space:nowrap;margin:0" title="Subir imagen al CDN">
+            ↑ Subir
+            <input type="file" id="mc-file-thumb" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="subirArchivoR2(this,'mc-thumbnail-url','mc-upload-progress-thumb')">
+          </label>
+        </div>
+        <div id="mc-upload-progress-thumb" style="display:none;margin-top:6px">
+          <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
+            <div id="mc-upload-bar-thumb" style="height:100%;background:var(--accent);width:0%;transition:width .2s"></div>
+          </div>
+          <span id="mc-upload-label-thumb" style="font-size:11px;color:var(--dim)">Subiendo...</span>
+        </div>
       </div>
     </div>
     <div class="modal-footer">

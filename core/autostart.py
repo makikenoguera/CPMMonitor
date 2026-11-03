@@ -16,7 +16,7 @@ PLIST_PATH  = os.path.join(PLIST_DIR, f"{PLIST_LABEL}.plist")
 
 # ── Windows ───────────────────────────────────────────────────────────────────
 _REG_KEY  = r"Software\Microsoft\Windows\CurrentVersion\Run"
-_REG_NAME = "CPMMonitor"
+_REG_NAME = "SumarteRedMonitor"
 
 
 def _get_executable():

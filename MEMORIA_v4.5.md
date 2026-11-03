@@ -1,7 +1,7 @@
 # CPM Monitor — Memoria del Proyecto v4.5
 **Fecha de hito:** 27 de mayo de 2026  
 **Tag Git:** `v4.5-stable`  
-**Repo:** `makikenoguera/CPMMonitor`
+**Repo:** `makikenoguera/SumarteRedMonitor`
 
 ---
 
@@ -18,7 +18,7 @@ Agente de monitoreo de reproducciones de audio y video para establecimientos com
 | API REST | Flask + SQLite | VPS Hostinger `srv475804` |
 | Dashboard web | HTML/CSS/JS vanilla | `/opt/cpmtracks/dashboard/` |
 | Página de descarga | HTML estático | `monitor.cpmtracks.com/descargar.html` |
-| Build Windows | GitHub Actions | `makikenoguera/CPMMonitor` |
+| Build Windows | GitHub Actions | `makikenoguera/SumarteRedMonitor` |
 
 ---
 
@@ -33,8 +33,8 @@ Agente de monitoreo de reproducciones de audio y video para establecimientos com
 ### Mac (desarrollo)
 - **Proyecto:** `/Users/macbookpro/CPMTracks/`
 - **App macOS:** `main.py` + `ui/` + `core/`
-- **Spec macOS:** `CPMMonitor.spec`
-- **Spec Windows:** `CPMMonitor_win.spec`
+- **Spec macOS:** `SumarteRedMonitor.spec`
+- **Spec Windows:** `SumarteRedMonitor_win.spec`
 - **Installer:** `installer.iss` (Inno Setup)
 - **Logo:** `logo.png` (450×100, ecualizador azul + "CPM TRACKS")
 
@@ -164,8 +164,8 @@ id_local, nombre, tipo, activo, token, id_usuario, ultimo_ping, created_at
 ### Proceso automático
 1. Push a tag `v4.5` en GitHub → dispara `build_windows.yml`
 2. `windows-latest` instala dependencias de `requirements_win.txt`
-3. PyInstaller con `CPMMonitor_win.spec` → `dist/CPMMonitor/` (onedir)
-4. Inno Setup con `installer.iss` → `Output/CPMMonitor_Setup_v4.5.exe`
+3. PyInstaller con `SumarteRedMonitor_win.spec` → `dist/SumarteRedMonitor/` (onedir)
+4. Inno Setup con `installer.iss` → `Output/SumarteRedMonitor_Setup_v4.5.exe`
 5. Release automático en GitHub con el `.exe` adjunto
 
 ### Comando para lanzar build
@@ -192,9 +192,9 @@ git tag v4.5 && git push origin v4.5
 ```json
 {
   "version": "4.5",
-  "url": "https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v4.5.zip",
-  "url_win_exe": "https://github.com/makikenoguera/CPMMonitor/releases/download/v4.5/CPMMonitor_Setup_v4.5.exe",
-  "url_win_zip": "https://monitor.cpmtracks.com/monitor-install/CPMMonitor_v4.5_win.zip"
+  "url": "https://monitor.cpmtracks.com/monitor-install/SumarteRedMonitor_v4.5.zip",
+  "url_win_exe": "https://github.com/makikenoguera/SumarteRedMonitor/releases/download/v4.5/SumarteRedMonitor_Setup_v4.5.exe",
+  "url_win_zip": "https://monitor.cpmtracks.com/monitor-install/SumarteRedMonitor_v4.5_win.zip"
 }
 ```
 
@@ -208,7 +208,7 @@ git tag v4.5 && git push origin v4.5
 | API URL | `https://monitor.cpmtracks.com` |
 | Dashboard | `https://monitor.cpmtracks.com/dashboard/` |
 | Superadmin | `emilio@cpmtracks.com` / `CPM2025emilio` |
-| GitHub repo | `makikenoguera/CPMMonitor` |
+| GitHub repo | `makikenoguera/SumarteRedMonitor` |
 | AcoustID key | `geke6RgPjc` |
 
 ---
