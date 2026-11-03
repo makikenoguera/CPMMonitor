@@ -2,190 +2,187 @@ import SwiftUI
 
 struct MonitoreoView: View {
     let history: [PlayRecord]
+    @State private var filtro: Filtro = .todas
 
-    var body: some View {
-        if history.isEmpty {
-            VStack(spacing: 12) {
-                Image(systemName: "waveform.and.magnifyingglass")
-                    .font(.system(size: 36)).foregroundColor(SRColor.textLabel)
-                Text("Sin reproducciones registradas")
-                    .font(.subheadline).foregroundColor(SRColor.textSecond)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity).padding(.top, 40)
-        } else {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    // Summary bar
-                    let efectivos   = history.filter { $0.ganodinero }.count
-                    let promovidas  = history.filter { $0.inCatalog }.count
-                    let noPromov    = history.count - promovidas
-                    HStack(spacing: 0) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 9))
-                                .foregroundColor(efectivos > 0 ? SRColor.srGreen : SRColor.brand)
-                            Text("\(efectivos) pagadas")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(efectivos > 0 ? SRColor.srGreen : SRColor.textSecond)
-                        }
-                        Text("  ·  ").font(.system(size: 11)).foregroundColor(SRColor.textLabel)
-                        Text("\(promovidas) promovidas")
-                            .font(.system(size: 11))
-                            .foregroundColor(SRColor.brand)
-                        if noPromov > 0 {
-                            Text("  ·  ").font(.system(size: 11)).foregroundColor(SRColor.textLabel)
-                            Text("\(noPromov) otras")
-                                .font(.system(size: 11))
-                                .foregroundColor(SRColor.textSecond)
-                        }
-                        Spacer()
-                        Text("\(history.count) total")
-                            .font(.system(size: 11)).foregroundColor(SRColor.textSecond)
-                    }
-                    .padding(.horizontal, 14).padding(.vertical, 8)
-                    .background(SRColor.pageBg)
+    enum Filtro: CaseIterable {
+        case todas, pagadas, noPagadas
+    }
 
-                    Divider().overlay(SRColor.border)
-
-                    ForEach(history) { record in
-                        monitoreoRow(record)
-                        Divider().overlay(SRColor.border).padding(.leading, 14)
-                    }
-                }
-            }
-            .background(SRColor.pageBg)
+    private var pagadas:   [PlayRecord] { history.filter {  $0.ganodinero } }
+    private var noPagadas: [PlayRecord] { history.filter { !$0.ganodinero } }
+    private var mostrar:   [PlayRecord] {
+        switch filtro {
+        case .todas:     return history
+        case .pagadas:   return pagadas
+        case .noPagadas: return noPagadas
         }
     }
 
-    private func monitoreoRow(_ r: PlayRecord) -> some View {
-        let qualifying   = r.ganodinero                        // promovida + ≥80% → SE PAGA
-        let enProgreso   = r.isPromovida && !qualifying        // promovida pero aún no llega al umbral
-        let partial      = r.porcentaje >= 50 && !qualifying
-
-        let rowBg: Color = qualifying  ? SRColor.srGreen.opacity(0.07)
-                         : enProgreso  ? SRColor.brand.opacity(0.05)
-                         :               SRColor.cardBg
-
-        return VStack(alignment: .leading, spacing: 0) {
-            // Line 1: hora · fuente · promoBadge · título · % · status icon
-            HStack(spacing: 6) {
-                Text(r.horaFormatted)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(SRColor.textLabel)
-                    .frame(width: 40, alignment: .leading)
-
-                fuenteBadge(r.fuente)
-
-                // Badge promovida (estrella dorada) solo para canciones promovidas
-                if r.isPromovida {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 9))
-                        .foregroundColor(qualifying ? SRColor.srGreen : SRColor.brand)
+    var body: some View {
+        VStack(spacing: 0) {
+            filtroBar
+            Divider().overlay(SRColor.border)
+            if mostrar.isEmpty {
+                emptyState
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(mostrar) { r in
+                            fila(r)
+                            Divider().overlay(SRColor.border).padding(.leading, 14)
+                        }
+                    }
                 }
-
-                Text(r.titulo.isEmpty ? r.contenido : r.titulo)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(SRColor.textPrimary)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Text(r.porcentajeFormatted)
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(qualifying ? SRColor.srGreen : partial ? SRColor.venueOrange : SRColor.textSecond)
-                    .frame(width: 44, alignment: .trailing)
-
-                statusIcon(r).frame(width: 22, alignment: .center)
+                .background(SRColor.pageBg)
             }
-            .padding(.horizontal, 14).padding(.top, 8)
+        }
+    }
 
-            // Line 2: artista · ISRC · estado pago · duración · tiempo
-            HStack(spacing: 8) {
-                if !r.artista.isEmpty {
-                    Text(r.artista)
-                        .font(.system(size: 10))
-                        .foregroundColor(SRColor.textSecond)
+    // MARK: - Filter bar
+    private var filtroBar: some View {
+        HStack(spacing: 0) {
+            filtroBtn(.todas,     label: "Todas (\(history.count))")
+            sepV
+            filtroBtn(.pagadas,   label: "\(pagadas.count) Pagadas")
+            sepV
+            filtroBtn(.noPagadas, label: "\(noPagadas.count) No pagadas")
+        }
+        .background(SRColor.pageBg)
+    }
+
+    private var sepV: some View {
+        Rectangle().fill(SRColor.border).frame(width: 1, height: 16)
+    }
+
+    private func filtroBtn(_ f: Filtro, label: String) -> some View {
+        let active = filtro == f
+        return Button { filtro = f } label: {
+            VStack(spacing: 0) {
+                Text(label)
+                    .font(.system(size: 11, weight: active ? .semibold : .regular))
+                    .foregroundColor(active ? SRColor.textPrimary : SRColor.textSecond)
+                    .padding(.vertical, 9)
+                    .frame(maxWidth: .infinity)
+                Rectangle()
+                    .fill(active ? SRColor.brand : Color.clear)
+                    .frame(height: 2)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Row (2 líneas)
+    private func fila(_ r: PlayRecord) -> some View {
+        let paying    = r.ganodinero
+        let accentClr: Color = paying
+            ? SRColor.srGreen
+            : Color(red: 0.72, green: 0.42, blue: 0.42)
+        let rowBg: Color = paying
+            ? SRColor.srGreen.opacity(0.07)
+            : Color(red: 0.98, green: 0.94, blue: 0.94)
+
+        let pctStr = (r.porcentaje >= 80 ? "+" : "") + String(format: "%.0f%%", r.porcentaje)
+
+        return HStack(alignment: .center, spacing: 10) {
+
+            // Fecha + hora
+            VStack(alignment: .center, spacing: 1) {
+                Text(r.fechaCorta)
+                    .font(.system(size: 9))
+                    .foregroundColor(SRColor.textLabel)
+                Text(r.horaFormatted)
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundColor(paying ? SRColor.textSecond : SRColor.textLabel)
+            }
+            .frame(width: 38, alignment: .center)
+
+            // Acento vertical
+            RoundedRectangle(cornerRadius: 1)
+                .fill(accentClr.opacity(paying ? 0.85 : 0.38))
+                .frame(width: 2, height: 38)
+
+            // Info canción — 2 líneas
+            VStack(alignment: .leading, spacing: 4) {
+                // Línea 1: título · porcentaje
+                HStack(spacing: 6) {
+                    Text(r.titulo.isEmpty ? r.contenido : r.titulo)
+                        .font(.system(size: 12, weight: paying ? .semibold : .medium))
+                        .foregroundColor(paying ? SRColor.textPrimary : SRColor.textSecond)
                         .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(pctStr)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(paying ? SRColor.srGreen : SRColor.textLabel)
                 }
-                if !r.isrc.isEmpty {
-                    Text("·").foregroundColor(SRColor.textLabel).font(.system(size: 10))
-                    Text(r.isrc)
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundColor(SRColor.textSecond)
-                }
-                // Etiqueta de estado de pago
-                if qualifying {
-                    Text("· pagada")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(SRColor.srGreen)
-                } else if enProgreso {
-                    Text("· promovida")
-                        .font(.system(size: 10))
-                        .foregroundColor(SRColor.brand.opacity(0.8))
-                } else {
-                    Text("· no promovida")
+                // Línea 2: artista · ISRC | ⏱ duración / ≋ escuchado
+                HStack(spacing: 4) {
+                    if !r.artista.isEmpty {
+                        Text(r.artista)
+                            .font(.system(size: 10))
+                            .foregroundColor(SRColor.textLabel)
+                            .lineLimit(1)
+                    }
+                    if !r.isrc.isEmpty {
+                        Text("·").font(.system(size: 10)).foregroundColor(SRColor.textLabel)
+                        Text(r.isrc)
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundColor(SRColor.textLabel.opacity(0.65))
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                    Image(systemName: "clock")
+                        .font(.system(size: 8))
+                        .foregroundColor(SRColor.textLabel)
+                    Text(r.duracionFormatted)
                         .font(.system(size: 10))
                         .foregroundColor(SRColor.textLabel)
+                    Text("/")
+                        .font(.system(size: 10))
+                        .foregroundColor(SRColor.textLabel.opacity(0.5))
+                    Image(systemName: "waveform")
+                        .font(.system(size: 8))
+                        .foregroundColor(SRColor.textLabel)
+                    Text(fmtSeg(r.segundosEscuchados))
+                        .font(.system(size: 10))
+                        .foregroundColor(SRColor.textLabel.opacity(paying ? 1 : 0.6))
                 }
-                Spacer()
-                if !r.duracion.isEmpty {
-                    HStack(spacing: 2) {
-                        Image(systemName: "timer").font(.system(size: 9))
-                        Text(r.duracion)
-                    }
-                    .font(.system(size: 10))
-                    .foregroundColor(SRColor.textLabel)
-                }
-                HStack(spacing: 2) {
-                    Image(systemName: "ear").font(.system(size: 9))
-                    Text(formatSeconds(r.segundosEscuchados))
-                }
-                .font(.system(size: 10))
-                .foregroundColor(SRColor.textLabel)
             }
-            .padding(.horizontal, 14).padding(.bottom, 8)
+
+            // Círculo indicador (sutil)
+            ZStack {
+                Circle()
+                    .fill(paying
+                          ? SRColor.srGreen.opacity(0.85)
+                          : Color(red: 0.72, green: 0.52, blue: 0.52).opacity(0.28))
+                    .frame(width: 18, height: 18)
+                Image(systemName: paying ? "checkmark" : "xmark")
+                    .font(.system(size: paying ? 7 : 6,
+                                  weight: paying ? .bold : .thin))
+                    .foregroundColor(paying
+                                     ? .white
+                                     : Color(red: 0.50, green: 0.30, blue: 0.30).opacity(0.6))
+            }
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
         .background(rowBg)
     }
 
-    @ViewBuilder
-    private func fuenteBadge(_ f: String) -> some View {
-        let (label, color): (String, Color) = {
-            let lower = f.lowercased()
-            if lower.contains("spotify")  { return ("Spotify",  Color(red: 0.11, green: 0.73, blue: 0.33)) }
-            if lower.contains("youtube")  { return ("YouTube",  .red) }
-            if lower.contains("local")    { return ("Local",    Color(red: 0.45, green: 0.30, blue: 0.75)) }
-            return ("Sistema", SRColor.brand)
-        }()
-        Text(label)
-            .font(.system(size: 9, weight: .semibold))
-            .foregroundColor(color)
-            .padding(.horizontal, 5).padding(.vertical, 2)
-            .background(color.opacity(0.12))
-            .cornerRadius(4)
-            .frame(width: 52, alignment: .leading)
-    }
-
-    @ViewBuilder
-    private func statusIcon(_ r: PlayRecord) -> some View {
-        if r.ganodinero {
-            // Promovida + ≥80% → pagada
-            Image(systemName: r.enviado ? "checkmark.circle.fill" : "clock.arrow.circlepath")
-                .font(.system(size: 13))
-                .foregroundColor(r.enviado ? SRColor.srGreen : SRColor.venueOrange)
-        } else if r.inCatalog {
-            // Promovida pero aún no alcanza el umbral → en progreso
-            Image(systemName: "star.leadinghalf.filled")
-                .font(.system(size: 12))
-                .foregroundColor(SRColor.brand.opacity(0.8))
-        } else {
-            // No está en el catálogo de promovidas
-            Image(systemName: "music.note.slash")
-                .font(.system(size: 12)).foregroundColor(SRColor.textLabel)
+    // MARK: - Empty
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "waveform.and.magnifyingglass")
+                .font(.system(size: 32))
+                .foregroundColor(SRColor.textLabel)
+            Text("Sin reproducciones")
+                .font(.subheadline)
+                .foregroundColor(SRColor.textSecond)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.top, 40)
     }
 
-    private func formatSeconds(_ s: Double) -> String {
-        let min = Int(s) / 60; let sec = Int(s) % 60
-        return min > 0 ? "\(min)m \(sec)s" : "\(sec)s"
+    private func fmtSeg(_ s: Double) -> String {
+        String(format: "%d:%02d", Int(s) / 60, Int(s) % 60)
     }
 }

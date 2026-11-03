@@ -40,6 +40,13 @@ struct PlayRecord: Identifiable, Codable {
         return f.string(from: date)
     }
 
+    var fechaCorta: String {
+        let date = Date(timeIntervalSince1970: createdAt)
+        let f = DateFormatter()
+        f.dateFormat = "dd-MM"
+        return f.string(from: date)
+    }
+
     var porcentajeFormatted: String {
         return String(format: "%.0f%%", porcentaje)
     }

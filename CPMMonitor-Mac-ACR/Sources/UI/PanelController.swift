@@ -1,0 +1,56 @@
+import AppKit
+import SwiftUI
+
+class PanelController: NSObject {
+    private(set) var window: NSPanel?
+
+    override init() {
+        super.init()
+        buildPanel()
+    }
+
+    private func buildPanel() {
+        let hosting  = NSHostingView(rootView: RootView())
+
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 580, height: 700),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.minSize = NSSize(width: 460, height: 500)
+        panel.title           = "SumarteRed Monitor"
+        panel.contentView     = hosting
+        panel.isMovableByWindowBackground = true
+        panel.hidesOnDeactivate = false
+        panel.level           = .floating
+        panel.delegate        = self
+        // Forzar light mode — todo el diseño usa la paleta clara de SumarteRed.
+        panel.appearance = NSAppearance(named: .aqua)
+        self.window = panel
+    }
+
+    func showPanel() {
+        window?.center()
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func close() {
+        window?.orderOut(nil)
+    }
+
+    /// Reconstruir el panel (útil tras activación para cambiar a ContentView)
+    func rebuild() {
+        window?.close()
+        window = nil
+        buildPanel()
+        showPanel()
+    }
+}
+
+extension PanelController: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        // No terminamos la app, solo ocultamos
+    }
+}
