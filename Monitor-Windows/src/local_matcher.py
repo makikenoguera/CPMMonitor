@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 class LocalMatcher:
-    threshold: float = 0.70
-    half_threshold: float = 0.62
+    threshold: float = 0.60        # lowered from 0.70 — WASAPI loopback vs MP3 compression loss
+    half_threshold: float = 0.52   # lowered from 0.62
     gap_tolerance_factor: int = 2
 
     def __init__(self) -> None:
@@ -71,6 +71,7 @@ class LocalMatcher:
     ) -> dict[str, Any] | None:
         best_score = 0.0
         best_entry: dict[str, Any] | None = None
+        top_scores: list[tuple[float, str]] = []  # for diagnostics
 
         for entry in entries:
             ref = entry.get('fp', [])
@@ -78,6 +79,13 @@ class LocalMatcher:
                 continue
 
             score, _offset = self._sliding_score_and_offset(query, ref)
+
+            # Track top-3 regardless of threshold (for diagnostics)
+            if len(top_scores) < 3 or score > top_scores[-1][0]:
+                name = f"{entry.get('artista','')} - {entry.get('titulo','')}"
+                top_scores.append((score, name))
+                top_scores.sort(key=lambda x: x[0], reverse=True)
+                top_scores = top_scores[:3]
 
             if score < self.threshold:
                 continue
@@ -90,9 +98,14 @@ class LocalMatcher:
                 best_entry = entry
 
         if best_entry is None:
+            if top_scores:
+                top_str = ", ".join(f"{s:.3f}={n[:30]}" for s, n in top_scores)
+                logger.info("LocalMatcher [%s]: no match (threshold=%.2f). Top scores: %s", label, self.threshold, top_str)
+            else:
+                logger.debug("LocalMatcher [%s]: no match above threshold=%.2f", label, self.threshold)
             return None
 
-        logger.debug(
+        logger.info(
             "LocalMatcher [%s]: matched '%s - %s' score=%.3f",
             label,
             best_entry.get('artista', ''),
