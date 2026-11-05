@@ -1384,9 +1384,158 @@ class TrayUI:
             ),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Configuración…",   self._open_config),
+            pystray.MenuItem("Diagnóstico…",     self._open_diagnostics),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Salir",            self._quit),
         )
+
+    def _open_diagnostics(self, icon=None, item=None) -> None:
+        import threading
+        threading.Thread(target=self._run_diagnostics_window, daemon=True).start()
+
+    def _run_diagnostics_window(self) -> None:
+        import tkinter as tk
+        import time, platform, sys
+        import numpy as np
+
+        root = tk.Tk()
+        root.title("Diagnóstico del sistema")
+        root.geometry("520x480")
+        root.resizable(False, False)
+
+        BG, FG, GREEN, RED, YELLOW = "#1e1e1e", "#f0f0f0", "#4caf50", "#f44336", "#ff9800"
+        root.configure(bg=BG)
+
+        tk.Label(root, text="Diagnóstico del sistema", font=("Segoe UI", 13, "bold"),
+                 bg=BG, fg=FG).pack(pady=(14, 4))
+        tk.Label(root, text="Verificando compatibilidad con SumarteRed Monitor…",
+                 font=("Segoe UI", 9), bg=BG, fg="#aaaaaa").pack(pady=(0, 10))
+
+        frame = tk.Frame(root, bg=BG)
+        frame.pack(fill="both", expand=True, padx=20)
+
+        rows: list[tuple] = []
+
+        def add_row(label: str, value: str, status: str) -> None:
+            color = GREEN if status == "ok" else (RED if status == "error" else YELLOW)
+            dot = "●"
+            r = len(rows)
+            tk.Label(frame, text=dot, font=("Segoe UI", 10), bg=BG, fg=color).grid(
+                row=r, column=0, sticky="w", pady=3)
+            tk.Label(frame, text=label, font=("Segoe UI", 9), bg=BG, fg=FG, width=24,
+                     anchor="w").grid(row=r, column=1, sticky="w")
+            tk.Label(frame, text=value, font=("Segoe UI", 9), bg=BG, fg=color,
+                     anchor="w").grid(row=r, column=2, sticky="w")
+            rows.append((label, value, status))
+
+        # ── 1. Sistema operativo ──────────────────────────────────────────
+        try:
+            ver = platform.version()
+            plat = f"Windows {platform.release()} ({ver[:20]})"
+            add_row("Sistema operativo", plat, "ok")
+        except Exception as e:
+            add_row("Sistema operativo", str(e), "warn")
+
+        # ── 2. RAM disponible ─────────────────────────────────────────────
+        try:
+            import ctypes
+            class MEMORYSTATUSEX(ctypes.Structure):
+                _fields_ = [
+                    ("dwLength", ctypes.c_ulong),
+                    ("dwMemoryLoad", ctypes.c_ulong),
+                    ("ullTotalPhys", ctypes.c_ulonglong),
+                    ("ullAvailPhys", ctypes.c_ulonglong),
+                    ("ullTotalPageFile", ctypes.c_ulonglong),
+                    ("ullAvailPageFile", ctypes.c_ulonglong),
+                    ("ullTotalVirtual", ctypes.c_ulonglong),
+                    ("ullAvailVirtual", ctypes.c_ulonglong),
+                    ("sullAvailExtendedVirtual", ctypes.c_ulonglong),
+                ]
+            stat = MEMORYSTATUSEX()
+            stat.dwLength = ctypes.sizeof(stat)
+            ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
+            total_mb = stat.ullTotalPhys // (1024 * 1024)
+            avail_mb = stat.ullAvailPhys // (1024 * 1024)
+            ram_ok = total_mb >= 1024
+            add_row("RAM total / libre",
+                    f"{total_mb} MB / {avail_mb} MB disponibles",
+                    "ok" if ram_ok else "warn")
+        except Exception as e:
+            add_row("RAM", f"No se pudo leer ({e})", "warn")
+
+        # ── 3. Python / numpy ─────────────────────────────────────────────
+        py_ver = f"Python {sys.version.split()[0]}  /  numpy {np.__version__}"
+        add_row("Python + numpy", py_ver, "ok")
+
+        # ── 4. fpcalc disponible ──────────────────────────────────────────
+        try:
+            from src.fingerprint import FingerprintEngine
+            fp_ok = FingerprintEngine.is_available()
+            add_row("fpcalc (Chromaprint)", "Disponible ✓" if fp_ok else "NO encontrado",
+                    "ok" if fp_ok else "error")
+        except Exception as e:
+            add_row("fpcalc", f"Error: {e}", "error")
+
+        # ── 5. Benchmark numpy matching ───────────────────────────────────
+        try:
+            rng = np.random.default_rng(42)
+            # Simulate 4520 tracks × 120 FP values (typical real catalog)
+            n_tracks, fp_len = 4520, 120
+            catalog = [rng.integers(0, 2**32, fp_len, dtype=np.uint32) for _ in range(n_tracks)]
+            query = rng.integers(0, 2**32, fp_len, dtype=np.uint32)
+
+            t0 = time.perf_counter()
+            for ref in catalog:
+                xor = query ^ ref
+                _ = int(np.unpackbits(xor.view(np.uint8)).sum())
+            elapsed_ms = (time.perf_counter() - t0) * 1000
+
+            if elapsed_ms < 200:
+                verdict = f"{elapsed_ms:.0f} ms — Excelente ✓"
+                st = "ok"
+            elif elapsed_ms < 800:
+                verdict = f"{elapsed_ms:.0f} ms — Aceptable ✓"
+                st = "warn"
+            else:
+                verdict = f"{elapsed_ms:.0f} ms — Muy lento ✗"
+                st = "error"
+            add_row("Benchmark fingerprints", verdict, st)
+        except Exception as e:
+            add_row("Benchmark", f"Error: {e}", "error")
+
+        # ── 6. Audio WASAPI ───────────────────────────────────────────────
+        try:
+            import soundcard as sc
+            speakers = sc.all_speakers()
+            sp_names = [s.name[:30] for s in speakers[:3]]
+            add_row("Dispositivos de audio", f"{len(speakers)} encontrados", "ok")
+        except Exception as e:
+            add_row("Audio WASAPI", f"No disponible: {e}", "error")
+
+        # ── Veredicto final ───────────────────────────────────────────────
+        errors = sum(1 for _, _, s in rows if s == "error")
+        warns  = sum(1 for _, _, s in rows if s == "warn")
+
+        summary_frame = tk.Frame(root, bg="#2a2a2a", pady=10)
+        summary_frame.pack(fill="x", padx=20, pady=(10, 0))
+
+        if errors == 0 and warns == 0:
+            verdict_text = "✓  Este equipo es compatible con SumarteRed Monitor"
+            verdict_color = GREEN
+        elif errors == 0:
+            verdict_text = "⚠  Compatible con advertencias menores"
+            verdict_color = YELLOW
+        else:
+            verdict_text = "✗  Este equipo puede tener problemas"
+            verdict_color = RED
+
+        tk.Label(summary_frame, text=verdict_text, font=("Segoe UI", 10, "bold"),
+                 bg="#2a2a2a", fg=verdict_color).pack(pady=4)
+
+        tk.Button(root, text="Cerrar", command=root.destroy,
+                  bg="#444", fg=FG, relief="flat", padx=20, pady=6).pack(pady=12)
+
+        root.mainloop()
 
     def _open_monitor(self, icon=None, item=None) -> None:
         self._monitor_window.show()
