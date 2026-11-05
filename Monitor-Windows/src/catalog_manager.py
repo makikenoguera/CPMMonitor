@@ -22,6 +22,7 @@ class CatalogManager:
         self._store = store
         self._matcher = matcher
         self._lock = threading.Lock()
+        self.on_catalog_ready = None  # callback(count) fired once when catalog goes 0→N
 
     # ------------------------------------------------------------------
     # Public API
@@ -127,6 +128,8 @@ class CatalogManager:
                 'is_promovida': 1 if t.get('is_promovida', False) else 0,
             })
 
+        prev_fp = self._store.fp_count
+
         if batch:
             self._store.upsert_batch(batch)
 
@@ -141,6 +144,13 @@ class CatalogManager:
 
         # Reload matcher with fresh data
         self._matcher.reload(self._store.load_all())
+
+        # Fire callback when catalog goes from empty to populated
+        if prev_fp == 0 and with_fp > 0 and self.on_catalog_ready:
+            try:
+                self.on_catalog_ready(with_fp)
+            except Exception:
+                pass
 
     def _sync(self) -> None:
         server_version = self._get_server_version()

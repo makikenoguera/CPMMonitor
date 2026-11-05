@@ -1301,6 +1301,9 @@ class ConfigDialog:
                 self._config.save()
                 status_var.set(f"✅ Verificado: {result.get('nombre_local', vid)}")
                 status_lbl.config(fg="green")
+                # Auto-start scanner after first configuration
+                if not self._scanner.is_scanning:
+                    self._scanner.start()
                 root.after(1500, root.destroy)
             else:
                 status_var.set("Error: no se pudo verificar el local. Revisa los datos.")
@@ -1318,7 +1321,7 @@ class ConfigDialog:
 # ── Tray UI ───────────────────────────────────────────────────────────────────
 
 class TrayUI:
-    def __init__(self, config, scanner, sync_manager, db) -> None:
+    def __init__(self, config, scanner, sync_manager, db, catalog_manager=None) -> None:
         self._config  = config
         self._scanner = scanner
         self._sync    = sync_manager
@@ -1331,6 +1334,19 @@ class TrayUI:
         self._monitor_window = MonitorWindow(config, scanner, db)
 
         scanner.on_status_change = self._on_scanner_status
+
+        if catalog_manager is not None:
+            catalog_manager.on_catalog_ready = self._on_catalog_ready
+
+    def _on_catalog_ready(self, count: int) -> None:
+        """Auto-start scanner when catalog becomes available for the first time."""
+        if self._config.is_activated and not self._scanner.is_scanning:
+            logger.info("TrayUI: catalog ready (%d tracks) — auto-starting scanner", count)
+            self._scanner.start()
+            self._active      = True
+            self._status_text = "Escuchando…"
+            if self._icon:
+                self._refresh_icon()
 
     def run(self) -> None:
         self._update_status_text()
