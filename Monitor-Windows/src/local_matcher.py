@@ -29,9 +29,10 @@ class LocalMatcher:
         for e in all_entries:
             fp = e.get('fp', [])
             if isinstance(fp, list):
-                e['_fp_np'] = np.array(fp, dtype=np.uint32)
+                # Chromaprint values are signed int32; reinterpret bits as uint32
+                e['_fp_np'] = np.array(fp, dtype=np.int32).view(np.uint32)
             elif isinstance(fp, np.ndarray):
-                e['_fp_np'] = fp.view(np.uint32)
+                e['_fp_np'] = fp.astype(np.int32).view(np.uint32)
             else:
                 e['_fp_np'] = np.array([], dtype=np.uint32)
 
@@ -49,7 +50,7 @@ class LocalMatcher:
         if not query or len(query) < self.min_query_len:
             return None
 
-        q_np = np.array(query, dtype=np.uint32)
+        q_np = np.array(query, dtype=np.int32).view(np.uint32)
 
         with self._lock:
             index_copy = list(self._index)
