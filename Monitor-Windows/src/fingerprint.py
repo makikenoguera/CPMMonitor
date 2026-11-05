@@ -11,6 +11,11 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+# Hide console window on Windows when launching subprocesses
+_SUBPROCESS_FLAGS: dict = {}
+if sys.platform == 'win32':
+    _SUBPROCESS_FLAGS['creationflags'] = subprocess.CREATE_NO_WINDOW
+
 
 def _fpcalc_path() -> str:
     """Resolve path to fpcalc.exe, supporting PyInstaller bundles."""
@@ -49,6 +54,7 @@ class FingerprintEngine:
                 [path, '-version'],
                 capture_output=True,
                 timeout=5,
+                **_SUBPROCESS_FLAGS,
             )
             return result.returncode == 0
         except Exception:
@@ -82,10 +88,12 @@ class FingerprintEngine:
             result_raw = subprocess.run(
                 [fpcalc, '-raw', '-json', tmp_wav],
                 capture_output=True, timeout=30,
+                **_SUBPROCESS_FLAGS,
             )
             result_str = subprocess.run(
                 [fpcalc, '-json', tmp_wav],
                 capture_output=True, timeout=30,
+                **_SUBPROCESS_FLAGS,
             )
 
             if result_raw.returncode != 0:
