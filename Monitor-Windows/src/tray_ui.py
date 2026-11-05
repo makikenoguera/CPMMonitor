@@ -46,17 +46,33 @@ FONT_BIG    = ("Segoe UI", 22, "bold")
 # ── Tray icon ─────────────────────────────────────────────────────────────────
 
 def make_icon(active: bool) -> Image.Image:
-    img  = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    """SumarteRed brand icon: orange rounded square with diagonal white stripes."""
+    size = 64
+    img  = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     color = (255, 107, 53, 255) if active else (150, 150, 150, 255)
-    draw.rounded_rectangle([4, 4, 60, 60], radius=12, fill=color)
-    # waveform bars (simplified)
-    if active:
-        for x, h in [(18, 28), (26, 40), (34, 32), (42, 20), (50, 36)]:
-            y0 = 32 - h // 2
-            draw.rounded_rectangle([x - 3, y0, x + 3, y0 + h], radius=3,
-                                   fill=(255, 255, 255, 220))
-    return img
+    radius = size // 6
+    draw.rounded_rectangle([0, 0, size - 1, size - 1], radius=radius, fill=color)
+
+    # Diagonal white stripes (bottom-left → top-right, 45°)
+    sw = max(1, size // 8)
+    for off in (-size // 5, 0, size // 5):
+        pts = [
+            (off - sw, size),
+            (off + sw, size),
+            (off + size + sw, 0),
+            (off + size - sw, 0),
+        ]
+        draw.polygon(pts, fill=(255, 255, 255, 230))
+
+    # Re-clip to rounded square
+    mask = Image.new('L', (size, size), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        [0, 0, size - 1, size - 1], radius=radius, fill=255
+    )
+    result = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    result.paste(img, mask=mask)
+    return result
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

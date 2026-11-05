@@ -1,6 +1,10 @@
+#ifndef MyAppVersion
+  #define MyAppVersion "1.1.5"
+#endif
+
 [Setup]
 AppName=SumarteRed Monitor
-AppVersion=1.0.0
+AppVersion={#MyAppVersion}
 AppPublisher=SumarteRed
 AppPublisherURL=https://sumartered.com
 AppSupportURL=https://sumartered.com

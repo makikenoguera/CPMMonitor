@@ -17,6 +17,19 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
+      - name: Extraer versión del tag
+        id: version
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#win-v}"
+          # fallback for workflow_dispatch (no tag)
+          if [ -z "$VERSION" ] || [ "$VERSION" = "$TAG" ]; then
+            VERSION="0.0.0-dev"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Versión: $VERSION"
+
       - name: Configurar Python 3.13
         uses: actions/setup-python@v5
         with:
@@ -55,7 +68,7 @@ jobs:
       - name: Crear instalador con Inno Setup
         working-directory: Monitor-Windows
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion="${{ steps.version.outputs.version }}" installer.iss
         shell: powershell
 
       - name: Subir instalador como artefacto
