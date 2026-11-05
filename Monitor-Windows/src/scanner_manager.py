@@ -26,8 +26,9 @@ class ScannerManager:
     ACCUMULATION_INTERVAL: float = 2.0   # seconds between RMS ticks
     REQUIRED_CONFIRMATIONS: int = 2      # 2 consecutive matches required before confirming
     SAMPLE_SECONDS: int = 15             # 15s of audio is enough for Chromaprint
-    MIN_QUERY_INTERVAL: float = 10.0     # query every 10s (was 20s — too slow)
+    MIN_QUERY_INTERVAL: float = 10.0     # query every 10s
     PERIODIC_CHECK_INTERVAL: float = 10.0
+    QUERY_TIMEOUT: float = 25.0          # max seconds for a fingerprint+match query
 
     def __init__(self, config, db, catalog, matcher, audio) -> None:
         self._config = config
@@ -50,6 +51,7 @@ class ScannerManager:
         self._confirmation_count: int = 0
         self._last_query_time: float = 0.0
         self._last_match_key: Optional[str] = None
+        self._query_in_flight: bool = False   # prevent overlapping queries
 
         # Callback for status updates
         self.on_status_change: Optional[Callable[[str], None]] = None
@@ -159,9 +161,15 @@ class ScannerManager:
             and (now - self._last_query_time) >= self.MIN_QUERY_INTERVAL
         )
 
-        if should_query:
+        if should_query and not self._query_in_flight:
             self._last_query_time = now
-            self._do_fingerprint_query()
+            self._query_in_flight = True
+            import threading as _t
+            _t.Thread(
+                target=self._do_fingerprint_query,
+                daemon=True,
+                name='FingerprintQuery',
+            ).start()
 
         # --- Reset if no audio and no candidate ---
         if not audio_active and self._candidate is None:
@@ -170,6 +178,14 @@ class ScannerManager:
             self._pending_match = None
 
     def _do_fingerprint_query(self) -> None:
+        try:
+            self._do_fingerprint_query_inner()
+        except Exception as exc:
+            logger.error("ScannerManager._do_fingerprint_query error: %s", exc, exc_info=True)
+        finally:
+            self._query_in_flight = False
+
+    def _do_fingerprint_query_inner(self) -> None:
         from src.fingerprint import FingerprintEngine
 
         if not FingerprintEngine.is_available():

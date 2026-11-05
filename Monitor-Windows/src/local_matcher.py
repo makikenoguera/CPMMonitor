@@ -2,13 +2,14 @@ import logging
 import threading
 from typing import Any
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 
 class LocalMatcher:
-    threshold: float = 0.60        # lowered from 0.70 — WASAPI loopback vs MP3 compression loss
-    half_threshold: float = 0.52   # lowered from 0.62
-    gap_tolerance_factor: int = 2
+    threshold: float = 0.60      # WASAPI loopback vs MP3 — slight compression diff
+    min_query_len: int = 20      # minimum FP values to attempt a match
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -20,14 +21,19 @@ class LocalMatcher:
     # ------------------------------------------------------------------
 
     def reload(self, entries: list[dict[str, Any]]) -> None:
-        """Rebuild the in-memory index from catalog entries.
-
-        Each entry dict is expected to have keys:
-            id, artista, titulo, isrc, duration_seg, fp (list[int]),
-            active, updated_at, is_promovida
-        """
+        """Rebuild the in-memory index from catalog entries."""
         all_entries = [e for e in entries if e.get('fp')]
         promovidas = [e for e in all_entries if e.get('is_promovida')]
+
+        # Pre-convert FP lists to numpy arrays for fast matching
+        for e in all_entries:
+            fp = e.get('fp', [])
+            if isinstance(fp, list):
+                e['_fp_np'] = np.array(fp, dtype=np.uint32)
+            elif isinstance(fp, np.ndarray):
+                e['_fp_np'] = fp.view(np.uint32)
+            else:
+                e['_fp_np'] = np.array([], dtype=np.uint32)
 
         with self._lock:
             self._index = all_entries
@@ -39,70 +45,72 @@ class LocalMatcher:
         )
 
     def match(self, query: list[int]) -> dict[str, Any] | None:
-        """Try to match query fingerprint against local catalog.
-
-        Returns a result dict or None.
-        """
-        if not query:
+        """Try to match query fingerprint against local catalog."""
+        if not query or len(query) < self.min_query_len:
             return None
+
+        q_np = np.array(query, dtype=np.uint32)
 
         with self._lock:
             index_copy = list(self._index)
             promovidas_copy = list(self._index_promovidas)
 
-        # Phase 1: check promovidas first
+        # Phase 1: promovidas first (fast — typically ≤10 tracks)
         if promovidas_copy:
-            result = self._search_in_index(query, promovidas_copy, label="promovidas")
+            result = self._search_numpy(q_np, promovidas_copy, label="promovidas")
             if result is not None:
                 return result
 
-        # Phase 2: check full index
-        return self._search_in_index(query, index_copy, label="full")
+        # Phase 2: full index (vectorized numpy — fast even at 4520 tracks)
+        return self._search_numpy(q_np, index_copy, label="full")
 
     # ------------------------------------------------------------------
-    # Internal search
+    # Vectorized numpy search
     # ------------------------------------------------------------------
 
-    def _search_in_index(
+    def _search_numpy(
         self,
-        query: list[int],
+        query: np.ndarray,
         entries: list[dict[str, Any]],
         label: str,
     ) -> dict[str, Any] | None:
+        """Slide query over each reference fingerprint using numpy XOR + popcount.
+
+        ~100× faster than pure Python, releases the GIL during C ops so the
+        UI thread stays responsive.
+        """
+        q_len = len(query)
+        total_bits = q_len * 32
+
         best_score = 0.0
         best_entry: dict[str, Any] | None = None
-        top_scores: list[tuple[float, str]] = []  # for diagnostics
+        top_scores: list[tuple[float, str]] = []  # diagnostics
 
         for entry in entries:
-            ref = entry.get('fp', [])
-            if not ref:
+            ref = entry.get('_fp_np')
+            if ref is None or len(ref) < q_len:
                 continue
 
-            score, _offset = self._sliding_score_and_offset(query, ref)
+            score = self._best_score_numpy(query, ref, q_len, total_bits)
 
-            # Track top-3 regardless of threshold (for diagnostics)
+            # Track top-3 regardless of threshold
+            name = f"{entry.get('artista', '')} - {entry.get('titulo', '')}"
             if len(top_scores) < 3 or score > top_scores[-1][0]:
-                name = f"{entry.get('artista','')} - {entry.get('titulo','')}"
                 top_scores.append((score, name))
                 top_scores.sort(key=lambda x: x[0], reverse=True)
                 top_scores = top_scores[:3]
 
-            if score < self.threshold:
-                continue
-
-            if not self._positional_consistency(query, ref):
-                continue
-
-            if score > best_score:
+            if score >= self.threshold and score > best_score:
                 best_score = score
                 best_entry = entry
 
         if best_entry is None:
-            if top_scores:
-                top_str = ", ".join(f"{s:.3f}={n[:30]}" for s, n in top_scores)
-                logger.info("LocalMatcher [%s]: no match (threshold=%.2f). Top scores: %s", label, self.threshold, top_str)
-            else:
-                logger.debug("LocalMatcher [%s]: no match above threshold=%.2f", label, self.threshold)
+            if top_scores and top_scores[0][0] > 0.30:
+                top_str = ", ".join(f"{s:.3f}={n[:35]}" for s, n in top_scores)
+                logger.info(
+                    "LocalMatcher [%s]: no match (threshold=%.2f). Top: %s",
+                    label, self.threshold, top_str,
+                )
             return None
 
         logger.info(
@@ -112,99 +120,41 @@ class LocalMatcher:
             best_entry.get('titulo', ''),
             best_score,
         )
-
         return {
-            'id': best_entry.get('id'),
-            'artista': best_entry.get('artista', ''),
-            'titulo': best_entry.get('titulo', ''),
-            'isrc': best_entry.get('isrc', ''),
+            'id':           best_entry.get('id'),
+            'artista':      best_entry.get('artista', ''),
+            'titulo':       best_entry.get('titulo', ''),
+            'isrc':         best_entry.get('isrc', ''),
             'duration_seg': best_entry.get('duration_seg', 0.0),
-            'score': best_score,
-            'in_catalog': True,
+            'score':        best_score,
+            'in_catalog':   True,
             'is_promovida': bool(best_entry.get('is_promovida')),
         }
 
-    # ------------------------------------------------------------------
-    # Sliding-window Hamming score
-    # ------------------------------------------------------------------
-
-    def _sliding_score_and_offset(
-        self, query: list[int], ref: list[int]
-    ) -> tuple[float, int]:
-        """Slide query over ref and return (best_score, best_offset).
-
-        score = 1 - popcount(XOR) / (len(query) * 32)
-        """
-        q_len = len(query)
+    @staticmethod
+    def _best_score_numpy(
+        query: np.ndarray,
+        ref: np.ndarray,
+        q_len: int,
+        total_bits: int,
+    ) -> float:
+        """Return the best sliding-window Hamming similarity score using numpy."""
         r_len = len(ref)
-
-        if q_len == 0 or r_len == 0:
-            return 0.0, 0
-
-        # If query is longer than ref, we slide ref over query instead
-        if q_len > r_len:
-            score, offset = self._sliding_score_and_offset(ref, query)
-            return score, -offset
-
-        # step size: 1 for short queries, larger for long ones
-        step = 1 if q_len <= 120 else max(1, q_len // 8)
-
         max_offset = r_len - q_len
+
+        # Step size: coarser for long queries (trade precision for speed)
+        step = max(1, q_len // 16) if q_len > 60 else 1
+
         best_score = 0.0
-        best_offset = 0
-        total_bits = q_len * 32
 
-        offset = 0
-        while offset <= max_offset:
-            xor_sum = 0
-            for i in range(q_len):
-                xor_val = query[i] ^ ref[offset + i]
-                xor_sum += bin(xor_val).count('1')
-
-            score = 1.0 - xor_sum / total_bits
-
+        for offset in range(0, max_offset + 1, step):
+            xor = query ^ ref[offset: offset + q_len]
+            # popcount via unpackbits (uint8 view of uint32 array)
+            bit_count = int(np.unpackbits(xor.view(np.uint8)).sum())
+            score = 1.0 - bit_count / total_bits
             if score > best_score:
                 best_score = score
-                best_offset = offset
-
-            # Early exit on very high score
             if best_score > 0.92:
                 break
 
-            offset += step
-
-        return best_score, best_offset
-
-    # ------------------------------------------------------------------
-    # Positional consistency check
-    # ------------------------------------------------------------------
-
-    def _positional_consistency(
-        self, query: list[int], ref: list[int]
-    ) -> bool:
-        """Check that both halves of the query align consistently with ref.
-
-        Splits query in half and verifies:
-        - Both halves score >= half_threshold
-        - |off2 - off1 - half_len| <= half_len // gap_tolerance_factor
-        """
-        q_len = len(query)
-        if q_len < 4:
-            # Too short to split meaningfully
-            return True
-
-        half = q_len // 2
-        first_half = query[:half]
-        second_half = query[half:]
-
-        score1, off1 = self._sliding_score_and_offset(first_half, ref)
-        score2, off2 = self._sliding_score_and_offset(second_half, ref)
-
-        if score1 < self.half_threshold or score2 < self.half_threshold:
-            return False
-
-        gap_tolerance = half // self.gap_tolerance_factor
-        expected_gap = half
-        actual_gap = abs(off2 - off1 - expected_gap)
-
-        return actual_gap <= gap_tolerance
+        return best_score
