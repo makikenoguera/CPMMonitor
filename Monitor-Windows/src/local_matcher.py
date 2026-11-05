@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class LocalMatcher:
-    threshold: float = 0.50      # WASAPI loopback vs MP3/AAC-YouTube — compression diff
+    threshold: float = 0.65      # WASAPI loopback vs MP3/AAC-YouTube — tuned empirically
     min_query_len: int = 20      # minimum FP values to attempt a match
 
     def __init__(self) -> None:

@@ -259,8 +259,9 @@ class ScannerManager:
             if self._candidate is None:
                 self._create_candidate(match)
             elif self._make_match_key(self._candidate) != match_key:
-                # Different track confirmed - save current, start new
-                logger.info("ScannerManager: track changed, resetting candidate")
+                # Different track confirmed - try to save current before switching
+                logger.info("ScannerManager: track changed, saving previous candidate")
+                self._try_save_play()
                 self._candidate = None
                 self._confirmation_count = 1
                 self._create_candidate(match)

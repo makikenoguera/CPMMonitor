@@ -158,3 +158,28 @@ class DatabaseManager:
                 return 0
             finally:
                 conn.close()
+
+    def fetch_history(self, limit: int = 200) -> list[dict[str, Any]]:
+        """Return the most recent plays, newest first."""
+        with self._lock:
+            conn = self._connect()
+            try:
+                rows = conn.execute(
+                    """
+                    SELECT id, idempotency_key, timestamp, venue_id, fuente,
+                           contenido, artista, titulo, duracion, isrc,
+                           in_catalog, is_promovida, porcentaje,
+                           segundos_escuchados, duracion_seg, confianza,
+                           enviado, intentos, created_at
+                    FROM plays
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                    """,
+                    (limit,),
+                ).fetchall()
+                return [dict(r) for r in rows]
+            except Exception as exc:
+                logger.error("DatabaseManager.fetch_history error: %s", exc)
+                return []
+            finally:
+                conn.close()
