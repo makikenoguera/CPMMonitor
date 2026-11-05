@@ -279,6 +279,7 @@ body{padding-bottom:24px}
       <option value="mes">Por mes</option>
       <option value="dia">Por día</option>
       <option value="rango">Por rango</option>
+      <option value="todo">Desde el inicio</option>
     </select>
   </div>
   <div class="sidebar-field" id="f-mes-wrap">
@@ -355,7 +356,7 @@ body{padding-bottom:24px}
       <div class="tbl-scroll"><table><thead>
         <tr>
           <th onclick="sortRep(0)">Local</th><th onclick="sortRep(1)">ID</th><th onclick="sortRep(2)">Ciudad</th>
-          <th onclick="sortRep(3)">Plays</th><th onclick="sortRep(4)">CPM</th>
+          <th onclick="sortRep(3)">Plays</th><th onclick="sortRep(4)">Promovidos</th>
           <th onclick="sortRep(5)">Ingresos S.Red</th><th onclick="sortRep(6)">Ingreso estab.</th><th>Fuentes</th>
         </tr>
         <tr class="filter-row">
@@ -408,7 +409,7 @@ body{padding-bottom:24px}
       <div class="tbl-scroll"><table><thead><tr>
         <th onclick="sortBar(0)">Artista</th><th onclick="sortBar(1)">Canción</th><th onclick="sortBar(2)">ISRC</th>
         <th onclick="sortBar(3)">Fuente</th><th onclick="sortBar(4)">Veces</th><th onclick="sortBar(5)">% Reprod.</th>
-        <th onclick="sortBar(6)">Se paga</th><th onclick="sortBar(7)">Ingreso CPM</th><th onclick="sortBar(8)">Ingreso estab.</th>
+        <th onclick="sortBar(6)">Se paga</th><th onclick="sortBar(7)">Ingreso SumarteRed</th><th onclick="sortBar(8)">Ingreso estab.</th>
       </tr></thead>
       <tbody id="b-tbody"><tr><td colspan="9" class="empty">Selecciona un establecimiento</td></tr></tbody></table></div>
       <div id="pag-bar"></div>
@@ -634,6 +635,37 @@ body{padding-bottom:24px}
     <div class="modal-footer">
       <button class="btn btn-s" onclick="closeModal('modal-local')">Cancelar</button>
       <button class="btn btn-p" onclick="guardarLocal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL CREDENCIALES VENUE -->
+<div class="overlay" id="modal-credenciales">
+  <div class="modal" style="width:500px">
+    <h3 style="color:var(--accent)">✅ Establecimiento creado</h3>
+    <p style="margin:0 0 20px;color:var(--muted);font-size:13px">Comparte estas credenciales con el establecimiento para que pueda configurar la app de monitoreo.</p>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:6px">Venue ID</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="cred-venue-id" readonly style="flex:1;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:monospace;font-size:14px;color:var(--text)">
+          <button class="btn btn-s" onclick="copiarCred('cred-venue-id','btn-copy-vid')" id="btn-copy-vid" style="min-width:70px">Copiar</button>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:6px">API Key</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="cred-api-key" readonly style="flex:1;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:monospace;font-size:13px;color:var(--text)">
+          <button class="btn btn-s" onclick="copiarCred('cred-api-key','btn-copy-key')" id="btn-copy-key" style="min-width:70px">Copiar</button>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:12px;background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;font-size:12px;color:#7c5e00">
+      ⚠️ Guarda el API Key ahora — no se mostrará nuevamente. Siempre puedes consultarlo editando el establecimiento.
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-p" onclick="closeModal('modal-credenciales')">Listo</button>
     </div>
   </div>
 </div>
@@ -1047,6 +1079,7 @@ function getDateParams(){
   const v=document.getElementById('f-tipo-fecha').value;
   if(v==='mes') return {mes:document.getElementById('f-mes').value};
   if(v==='dia'){const d=document.getElementById('f-dia').value;return{desde:d,hasta:d};}
+  if(v==='todo') return {desde:'2020-01-01',hasta:new Date().toISOString().slice(0,10)};
   return{desde:document.getElementById('f-desde').value,hasta:document.getElementById('f-hasta').value};
 }
 
@@ -1067,6 +1100,7 @@ function showView(name,btn){
   if(name==='admin') loadAdmin();
   if(name==='catalogo') loadAdminCatalogo();
   if(name==='promovidas') loadPromovidas();
+  if(name==='artista') loadArtistasPromovidosDropdown();
   // Establecimiento: auto-cargar su propio local al entrar a la vista
   if(name==='bar' && SESSION?.rol==='establecimiento'){
     document.getElementById('bar-local-dd').value = SESSION.id_local;
@@ -1337,8 +1371,21 @@ function drawBarsBar(canciones){
 }
 
 // ── ARTISTAS ─────────────────────────────────────────────────────
+async function loadArtistasPromovidosDropdown(){
+  try{
+    const [ra,rp]=await Promise.all([
+      fetch(API+'/v1/artistas',{headers:authHeader()}),
+      fetch(API+'/v1/promovidas',{headers:authHeader()})
+    ]);
+    const artistas=await ra.json();
+    const promovidas=await rp.json();
+    const nombres=new Set(artistas.map(a=>a.nombre));
+    promovidas.forEach(p=>{if(p.artista_nombre)nombres.add(p.artista_nombre);});
+    buildArtistasDropdown([...nombres]);
+  }catch(e){console.log('Error artistas promovidos:',e);}
+}
 function buildArtistasDropdown(artistas){
-  allArtistas=(artistas||[]).filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+  allArtistas=(artistas||[]).map(a=>typeof a==='string'?a:a.artista).filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
   document.getElementById('ar-sel').innerHTML='<option value="">— Seleccionar artista —</option>'+allArtistas.map(a=>`<option value="${a}">${a}</option>`).join('');
 }
 function filterArtistas(){const q=document.getElementById('ar-nombre').value.toLowerCase();document.getElementById('ar-sel').innerHTML='<option value="">— Seleccionar artista —</option>'+allArtistas.filter(a=>a.toLowerCase().includes(q)).map(a=>`<option value="${a}">${a}</option>`).join('');}
@@ -1412,6 +1459,7 @@ function _renderAdminLocales(){
       <td style="text-align:center">${_pingDot(l.ultimo_ping)}</td>
       <td style="display:flex;gap:6px">
         <button class="btn-sm" onclick='editarLocal(${JSON.stringify(l).replace(/'/g,"&#39;")})'>Editar</button>
+        <button class="btn-sm" onclick='verCredencialesLocal(${JSON.stringify(l).replace(/'/g,"&#39;")})'>🔑 Creds</button>
         <button class="btn-sm danger" onclick="eliminarLocal('${l.id_local}','${(l.nombre||'').replace(/'/g,'')}')">${l.activo?'Desactivar':'Activar'}</button>
       </td>
     </tr>`).join('')||'<tr><td colspan="7" class="empty">Sin locales</td></tr>';
@@ -1528,6 +1576,14 @@ async function guardarLocal(){
     await loadLocalesDropdown();
     await Promise.all([loadAdminLocales(),loadAdminUsuarios()]);
     setStatus(id?'Local actualizado':'Local creado');
+    // Mostrar credenciales al crear un nuevo local
+    if(!id){
+      document.getElementById('cred-venue-id').value=d.id_local||finalId;
+      document.getElementById('cred-api-key').value=d.api_key||'';
+      document.getElementById('btn-copy-vid').textContent='Copiar';
+      document.getElementById('btn-copy-key').textContent='Copiar';
+      document.getElementById('modal-credenciales').classList.add('open');
+    }
   }catch(e){alert('Error de conexión');}
 }
 
@@ -1797,14 +1853,15 @@ function _renderAdminCatalogo(){
     <tr>
       <td><div style="width:64px;height:36px;border-radius:5px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;background:var(--card)">${s.thumbnail_url?`<img src="${s.thumbnail_url}" style="width:64px;height:36px;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=color:var(--faint);font-size:16px>🎵</span>'">`:'<span style="color:var(--faint);font-size:16px">🎵</span>'}</div></td>
       <td class="td-f">${s.artista}</td>
-      <td class="td-f">${s.titulo}${s.spotify_url?` <a href="${s.spotify_url}" target="_blank" style="color:var(--accent);font-size:11px" title="Spotify">♫</a>`:''}${s.youtube_url?` <a href="${s.youtube_url}" target="_blank" style="color:#f55;font-size:11px" title="YouTube">▶</a>`:''}</td>
+      <td class="td-f">${s.titulo}</td>
       <td class="td-f mono" style="color:var(--accent)">${s.isrc||'—'}</td>
       <td class="td-f">${s.genero?`<span class="badge" style="background:var(--panel);color:var(--dim);border:1px solid var(--border)">${s.genero}</span>`:'—'}</td>
       <td>${(_promoActivaIds||new Set()).has(s.id)?'<span class="badge" style="background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40;font-weight:700">Sí</span>':'<span class="badge" style="background:var(--panel);color:var(--faint);border:1px solid var(--border)">No</span>'}</td>
       <td>${s.activo?'<span class="badge badge-ok">Activa</span>':'<span class="badge badge-bad">Inactiva</span>'}</td>
       <td style="display:flex;gap:4px;align-items:center;flex-wrap:nowrap">
         <button class="btn-icon" onclick='editarCancion(${JSON.stringify(s)})' title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        ${s.spotify_url?`<a class="btn-icon spotify" href="${s.spotify_url}" target="_blank" title="Spotify"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg></a>`:''}
+        ${s.spotify_url?`<a href="${s.spotify_url}" target="_blank" title="Spotify" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--panel);border:2px solid #1DB954;color:#888;text-decoration:none;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg></a>`:''}
+        ${s.youtube_url?`<a href="${s.youtube_url}" target="_blank" title="YouTube" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--panel);border:2px solid #FF0000;color:#888;text-decoration:none;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>`:''}
         <button class="btn-icon ${s.activo?'danger':'ok'}" onclick="toggleCancion(${s.id},'${(s.titulo||'').replace(/'/g,'')}')" title="${s.activo?'Desactivar':'Activar'}">${s.activo?`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="4" x2="6" y2="20"/><line x1="18" y1="4" x2="18" y2="20"/></svg>`:`<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>`}</button>
         <button class="btn-icon danger" onclick="deleteCancion(${s.id},'${(s.titulo||'').replace(/'/g,'')}'))" title="Eliminar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
         ${s.cdn_url?`<a class="btn-icon cdn-ok" href="${s.cdn_url}" target="_blank" title="En CDN ✓"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></a>`:'<span class="btn-icon cdn-no" style="cursor:default" title="Sin CDN — falta subir el video"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>'}
@@ -1813,6 +1870,63 @@ function _renderAdminCatalogo(){
   }
   renderPag('admin_cat',rows.length);
 }
+async function buscarISRC(){
+  const spotifyUrl = document.getElementById('mc-spotify-url').value.trim();
+  if(!spotifyUrl){ alert('Ingresa primero la URL de Spotify'); return; }
+  const status = document.getElementById('mc-isrc-status');
+  status.style.color='var(--dim)';
+  status.textContent='Buscando ISRC…';
+
+  // Extraer track ID de la URL de Spotify
+  const m = spotifyUrl.match(/track\/([A-Za-z0-9]+)/);
+  if(!m){ status.style.color='#ef4444'; status.textContent='URL de Spotify no válida'; return; }
+  const trackId = m[1];
+
+  try {
+    // Consultar MusicBrainz: buscar recording vinculado a esta URL de Spotify
+    const mbUrlRes = await fetch(
+      `https://musicbrainz.org/ws/2/url?resource=https://open.spotify.com/track/${trackId}&inc=recording-rels&fmt=json`,
+      { headers:{'User-Agent':'SumarteRed/1.0 (monitor.sumartered.com)'} }
+    );
+    if(!mbUrlRes.ok) throw new Error('MB URL no encontrado');
+    const mbUrl = await mbUrlRes.json();
+    const recRels = mbUrl.relations?.filter(r=>r['target-type']==='recording') || [];
+    if(!recRels.length) throw new Error('Sin grabación en MusicBrainz');
+
+    const mbid = recRels[0].recording.id;
+    // Obtener ISRCs de esa grabación
+    const recRes = await fetch(
+      `https://musicbrainz.org/ws/2/recording/${mbid}?inc=isrcs&fmt=json`,
+      { headers:{'User-Agent':'SumarteRed/1.0 (monitor.sumartered.com)'} }
+    );
+    if(!recRes.ok) throw new Error('Recording no encontrado');
+    const rec = await recRes.json();
+    const isrcs = rec.isrcs || [];
+    if(!isrcs.length) throw new Error('Sin ISRC en MusicBrainz');
+
+    const isrc = isrcs[0];
+    document.getElementById('mc-isrc').value = isrc;
+    status.style.color='#10b981';
+    status.textContent=`✅ ISRC encontrado: ${isrc}`;
+  } catch(e) {
+    // Fallback: abrir isrcfinder.com con la URL precopiada
+    await navigator.clipboard.writeText(spotifyUrl).catch(()=>{});
+    status.textContent='';
+    // Mostrar toast
+    let toast = document.getElementById('isrc-toast');
+    if(!toast){
+      toast = document.createElement('div');
+      toast.id = 'isrc-toast';
+      toast.style.cssText='position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:14px 22px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:9999;max-width:420px;text-align:center;line-height:1.5;border-left:4px solid #f59e0b';
+      document.body.appendChild(toast);
+    }
+    toast.textContent='⚠️ URL de Spotify copiada en el portapapeles, pégala en isrcfinder.com y busca el ISRC de esta canción.';
+    toast.style.display='block';
+    setTimeout(()=>{ toast.style.display='none'; }, 6000);
+    setTimeout(()=>{ window.open('https://www.isrcfinder.com/','_blank'); }, 800);
+  }
+}
+
 function openModalCatalogo(){
   document.getElementById('mc-id').value='';
   document.getElementById('mc-artista').value='';
@@ -2127,6 +2241,27 @@ async function subirArchivoR2(input, targetFieldId, progressDivId, autoFill=fals
     setTimeout(() => { progressDiv.style.display='none'; bar.style.background='var(--accent)'; }, 3000);
   }
 }
+
+function copiarCred(inputId, btnId){
+  const val = document.getElementById(inputId).value;
+  navigator.clipboard.writeText(val).then(()=>{
+    const btn = document.getElementById(btnId);
+    btn.textContent='Copiado!';
+    btn.style.color='#1DB954';
+    setTimeout(()=>{btn.textContent='Copiar';btn.style.color='';},2000);
+  }).catch(()=>{
+    document.getElementById(inputId).select();
+    document.execCommand('copy');
+  });
+}
+
+function verCredencialesLocal(l){
+  document.getElementById('cred-venue-id').value=l.id_local||'';
+  document.getElementById('cred-api-key').value=l.api_key||'';
+  document.getElementById('btn-copy-vid').textContent='Copiar';
+  document.getElementById('btn-copy-key').textContent='Copiar';
+  document.getElementById('modal-credenciales').classList.add('open');
+}
 </script>
 
 <!-- MODAL LISTA DE LOTES -->
@@ -2263,13 +2398,28 @@ async function subirArchivoR2(input, targetFieldId, progressDivId, autoFill=fals
       <input type="hidden" id="mc-pvp" value="3000">
       <input type="hidden" id="mc-valor-estab" value="500">
       <!-- Links visibles -->
-      <div class="mfield">
+      <div class="mfield" style="grid-column:1/-1">
         <label>Spotify URL <span style="color:var(--dim);font-weight:400;font-size:10px">(opcional)</span></label>
-        <input type="url" id="mc-spotify-url" placeholder="https://open.spotify.com/track/...">
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="flex-shrink:0;width:32px;height:32px;background:#1DB954;border-radius:50%;display:flex;align-items:center;justify-content:center">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="#000"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+          </div>
+          <input type="url" id="mc-spotify-url" placeholder="https://open.spotify.com/track/..." style="flex:1">
+          <button type="button" onclick="buscarISRC()" title="Buscar ISRC en isrcfinder.com"
+            style="flex-shrink:0;padding:8px 12px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;letter-spacing:.03em">
+            🔍 Buscar ISRC
+          </button>
+        </div>
+        <div id="mc-isrc-status" style="font-size:11px;color:var(--dim);margin-top:4px;min-height:16px"></div>
       </div>
-      <div class="mfield">
+      <div class="mfield" style="grid-column:1/-1">
         <label>YouTube URL <span style="color:var(--dim);font-weight:400;font-size:10px">(opcional)</span></label>
-        <input type="url" id="mc-youtube-url" placeholder="https://youtube.com/watch?v=...">
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="flex-shrink:0;width:32px;height:32px;background:#FF0000;border-radius:50%;display:flex;align-items:center;justify-content:center">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+          </div>
+          <input type="url" id="mc-youtube-url" placeholder="https://youtube.com/watch?v=..." style="flex:1">
+        </div>
       </div>
       <!-- Fingerprint — cargar audio -->
       <div class="mfield" style="grid-column:1/-1">
@@ -3348,9 +3498,9 @@ async function loadPromovidas() {
 
 const DIAS_LABELS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 const STATUS_PROMO = {
-  activa:     '<span class="badge badge-ok">Activa</span>',
-  pausada:    '<span class="badge badge-warn">Pausada</span>',
-  completada: '<span class="badge" style="background:var(--accent)20;color:var(--accent)">Completada</span>',
+  activa:     id => `<button onclick="toggleStatusPromo(${id},'pausada')" class="badge badge-ok" style="cursor:pointer;border:none;font-family:inherit;font-size:11px" title="Click para pausar">Activa</button>`,
+  pausada:    id => `<button onclick="toggleStatusPromo(${id},'activa')" class="badge badge-warn" style="cursor:pointer;border:none;font-family:inherit;font-size:11px" title="Click para activar">Pausada</button>`,
+  completada: _  => `<span class="badge" style="background:var(--accent)20;color:var(--accent)">Completada</span>`,
 };
 
 function renderPromovidas() {
@@ -3383,7 +3533,7 @@ function renderPromovidas() {
     const planCell = `<span style="display:inline-flex;align-items:center;gap:5px;font-weight:600">
         <span style="width:8px;height:8px;border-radius:50%;background:${planColor};flex-shrink:0;display:inline-block"></span>${planNombre}
       </span><br>
-      <span class="mono" style="font-size:10px;color:var(--dim)">${fmt(p.total_plays)} plays contratados</span>`;
+      <span class="mono" style="font-size:10px;color:var(--dim)">${fmt(p.total_plays)} plays</span>`;
 
     // Columna INICIO: siempre 2 líneas; cuenta regresiva si es a futuro
     const hoy2 = new Date(); hoy2.setHours(0,0,0,0);
@@ -3404,7 +3554,7 @@ function renderPromovidas() {
       <td style="font-size:11px">${inicioCell}</td>
       <td class="mono" style="font-size:11px">${p.fecha_fin||'<span style="color:var(--faint)">Abierto</span>'}</td>
       <td style="font-size:11px;color:var(--dim)">${dias}</td>
-      <td>${STATUS_PROMO[p.status]||p.status}</td>
+      <td>${(STATUS_PROMO[p.status]||(_=>p.status))(p.id)}</td>
       <td style="display:flex;gap:4px;align-items:center">
         <button class="btn-icon" onclick="abrirModalPromo(${p.id})" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         ${p.status==='activa'
