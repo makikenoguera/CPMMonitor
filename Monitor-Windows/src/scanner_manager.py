@@ -24,8 +24,8 @@ class ScannerManager:
 
     AUDIO_THRESHOLD: float = 0.001   # WASAPI loopback levels vary by device
     ACCUMULATION_INTERVAL: float = 2.0   # seconds between RMS ticks
-    REQUIRED_CONFIRMATIONS: int = 2      # 2 consecutive matches required (10s apart) — anti falsos positivos
-    SAMPLE_SECONDS: int = 15             # 15s of audio is enough for Chromaprint
+    REQUIRED_CONFIRMATIONS: int = 1      # 1 match sufficient — DC MUSIC mixes already removed from catalog
+    SAMPLE_SECONDS: int = 20             # 20s gives more FP values → better alignment
     MIN_QUERY_INTERVAL: float = 10.0     # query every 10s
     PERIODIC_CHECK_INTERVAL: float = 10.0
     QUERY_TIMEOUT: float = 25.0          # max seconds for a fingerprint+match query

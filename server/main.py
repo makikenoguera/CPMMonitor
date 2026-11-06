@@ -999,12 +999,35 @@ async def catalog_version(x_api_key: str = Header(alias="X-API-Key", default="")
     return {"version": version, "count": len(_fp_index)}
 
 
+def _get_inactive_tombstones(since: int = 0) -> list:
+    """Return inactive track IDs as tombstones so clients can deactivate them locally."""
+    if not os.path.exists(FINGERPRINTS_DB):
+        return []
+    try:
+        with get_conn(FINGERPRINTS_DB) as conn:
+            query = "SELECT id FROM tracks WHERE active=0"
+            params = ()
+            if since:
+                query += " AND CAST(updated_at AS INTEGER) > ?"
+                params = (since,)
+            rows = conn.execute(query, params).fetchall()
+        return [
+            {"id": r["id"], "artista": "", "titulo": "", "isrc": "",
+             "duration_seg": 0, "fp_raw": "", "active": False,
+             "updated_at": 0, "is_promovida": False}
+            for r in rows
+        ]
+    except Exception as exc:
+        log.warning(f"[Catalog] Error fetching tombstones: {exc}")
+        return []
+
+
 @app.get("/v1/catalog/full")
 async def catalog_full(x_api_key: str = Header(alias="X-API-Key", default="")):
     """
     Catálogo completo para descarga inicial.
-    Devuelve todos los tracks con fingerprints como raw int32 LE en base64.
-    ~2 MB para 300 canciones, ~15 MB para 4500 canciones.
+    Devuelve tracks activos (con fingerprint) + tombstones inactivos (sin fp).
+    Los clientes marcan los tombstones como active=0 localmente.
     """
     with get_conn(VENUES_DB) as conn:
         row = conn.execute(
@@ -1032,8 +1055,10 @@ async def catalog_full(x_api_key: str = Header(alias="X-API-Key", default="")):
         }
         for e in _fp_index
     ]
-    log.info(f"[Catalog] Full download — {len(tracks)} tracks ({len(promo_ids)} promovidas)")
-    return {"version": version, "count": len(tracks), "tracks": tracks}
+    tombstones = _get_inactive_tombstones()
+    all_tracks = tracks + tombstones
+    log.info(f"[Catalog] Full download — {len(tracks)} tracks + {len(tombstones)} tombstones ({len(promo_ids)} promovidas)")
+    return {"version": version, "count": len(all_tracks), "tracks": all_tracks}
 
 
 @app.get("/v1/catalog/delta")
@@ -1073,8 +1098,10 @@ async def catalog_delta(
         for e in _fp_index
         if e["updated_ts"] > since
     ]
-    log.info(f"[Catalog] Delta since={since} — {len(tracks)} tracks nuevos")
-    return {"version": version, "count": len(tracks), "tracks": tracks}
+    tombstones = _get_inactive_tombstones(since)
+    all_tracks = tracks + tombstones
+    log.info(f"[Catalog] Delta since={since} — {len(tracks)} tracks + {len(tombstones)} tombstones")
+    return {"version": version, "count": len(all_tracks), "tracks": all_tracks}
 
 
 # ── Admin: activar/desactivar tracks del catálogo ─────────────────────────────
