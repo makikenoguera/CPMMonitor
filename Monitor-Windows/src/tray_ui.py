@@ -1368,6 +1368,7 @@ class TrayUI:
 
         scanner.on_status_change = self._on_scanner_status
 
+        self._catalog_manager = catalog_manager
         if catalog_manager is not None:
             catalog_manager.on_catalog_ready = self._on_catalog_ready
 
@@ -1400,11 +1401,45 @@ class TrayUI:
                 self._toggle_scanning,
             ),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Configuración…",   self._open_config),
-            pystray.MenuItem("Diagnóstico…",     self._open_diagnostics),
+            pystray.MenuItem("Configuración…",        self._open_config),
+            pystray.MenuItem("Diagnóstico…",         self._open_diagnostics),
+            pystray.MenuItem("Actualizar catálogo…", self._reset_catalog),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Salir",            self._quit),
+            pystray.MenuItem("Salir",                self._quit),
         )
+
+    def _reset_catalog(self, icon=None, item=None) -> None:
+        """Force a full catalog re-download from the server."""
+        import threading
+        threading.Thread(target=self._do_reset_catalog, daemon=True).start()
+
+    def _do_reset_catalog(self) -> None:
+        import tkinter as tk
+        from tkinter import messagebox
+        try:
+            if self._catalog_manager is None:
+                return
+            # Reset local version → catalog_manager will trigger full re-download
+            self._catalog_manager._store.local_version = 0
+            # Clear matcher index immediately so the UI reflects 0 while downloading
+            with self._scanner._matcher._lock:
+                self._scanner._matcher._index.clear()
+                self._scanner._matcher._index_promovidas.clear()
+            logger.info("TrayUI: catalog reset requested — triggering full re-download")
+            # Show brief notification
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showinfo(
+                "Actualizar catálogo",
+                "Descargando catálogo desde el servidor…\n"
+                "El escáner se reanudará automáticamente.",
+                parent=root,
+            )
+            root.destroy()
+            # Trigger sync in this thread
+            self._catalog_manager.check_for_updates()
+        except Exception as exc:
+            logger.error("TrayUI._do_reset_catalog error: %s", exc, exc_info=True)
 
     def _open_diagnostics(self, icon=None, item=None) -> None:
         import threading
