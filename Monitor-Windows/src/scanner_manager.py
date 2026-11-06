@@ -240,6 +240,8 @@ class ScannerManager:
                     }
                     logger.debug("ScannerManager: server match '%s - %s'", match['artista'], match['titulo'])
 
+        self._send_diagnostics(values, match)
+
         if match is None:
             logger.debug("ScannerManager: no match found")
             self._confirmation_count = 0
@@ -379,6 +381,50 @@ class ScannerManager:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    def _send_diagnostics(self, values: list, match) -> None:
+        from src.version import DIAG_ENABLED, __version__
+        if not DIAG_ENABLED:
+            return
+        try:
+            import threading as _t
+            matcher = self._matcher
+            top5_parts = []
+            if matcher.last_top_name:
+                top5_parts.append(f"{matcher.last_top_score:.3f}={matcher.last_top_name[:40]}")
+            payload = {
+                'ts': __import__('time').time(),
+                'venue_id': self._config.venue_id,
+                'app_version': __version__,
+                'query_len': len(values),
+                'catalog_n': len(matcher._index),
+                'promovidas_n': len(matcher._index_promovidas),
+                'rms': float(self._audio.current_rms),
+                'top_score': float(matcher.last_top_score),
+                'top_name': matcher.last_top_name[:80],
+                'top5': ', '.join(top5_parts),
+                'matched': match is not None,
+                'match_name': f"{match.get('artista','')} - {match.get('titulo','')}" if match else '',
+                'match_score': float(match.get('score', 0)) if match else 0.0,
+                'is_promovida': bool(match.get('is_promovida')) if match else False,
+            }
+            _t.Thread(
+                target=self._post_diagnostics,
+                args=(payload,),
+                daemon=True,
+            ).start()
+        except Exception:
+            pass
+
+    def _post_diagnostics(self, payload: dict) -> None:
+        try:
+            import requests as _r
+            url = f"{self._config.server_url.rstrip('/')}/v1/diagnostics"
+            _r.post(url, json=payload,
+                    headers={'X-API-Key': self._config.api_key},
+                    timeout=5, verify=False)
+        except Exception:
+            pass
 
     @staticmethod
     def _make_match_key(match_or_candidate: dict) -> str:

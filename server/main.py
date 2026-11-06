@@ -144,6 +144,26 @@ def init_plays_db():
         CREATE INDEX IF NOT EXISTS idx_plays_created_at  ON plays(created_at);
         CREATE INDEX IF NOT EXISTS idx_plays_isrc        ON plays(isrc);
 
+        CREATE TABLE IF NOT EXISTS diagnostics (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts          REAL NOT NULL,
+            venue_id    TEXT NOT NULL DEFAULT '',
+            app_version TEXT NOT NULL DEFAULT '',
+            query_len   INTEGER NOT NULL DEFAULT 0,
+            catalog_n   INTEGER NOT NULL DEFAULT 0,
+            promovidas_n INTEGER NOT NULL DEFAULT 0,
+            rms         REAL NOT NULL DEFAULT 0,
+            top_score   REAL NOT NULL DEFAULT 0,
+            top_name    TEXT NOT NULL DEFAULT '',
+            top5        TEXT NOT NULL DEFAULT '',
+            matched     INTEGER NOT NULL DEFAULT 0,
+            match_name  TEXT NOT NULL DEFAULT '',
+            match_score REAL NOT NULL DEFAULT 0,
+            is_promovida INTEGER NOT NULL DEFAULT 0,
+            created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_diag_ts ON diagnostics(ts DESC);
+
         CREATE TABLE IF NOT EXISTS artistas (
             id          TEXT PRIMARY KEY,
             nombre      TEXT NOT NULL,
@@ -951,6 +971,55 @@ async def receive_plays(
             promovidas_keys = [r[0] for r in rows]
 
     return {"accepted": accepted, "total": len(accepted), "promovidas": promovidas_keys}
+
+
+@app.post("/v1/diagnostics", status_code=201)
+async def receive_diagnostics(
+    payload: dict,
+    x_api_key: str = Header(alias="X-API-Key", default="")
+):
+    """Recibe datos de diagnóstico del cliente (sonda de detección). Sin auth estricta."""
+    try:
+        with get_conn(PLAYS_DB) as conn:
+            conn.execute("""
+                INSERT INTO diagnostics
+                    (ts, venue_id, app_version, query_len, catalog_n, promovidas_n,
+                     rms, top_score, top_name, top5, matched, match_name, match_score, is_promovida)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                payload.get('ts', 0),
+                payload.get('venue_id', ''),
+                payload.get('app_version', ''),
+                payload.get('query_len', 0),
+                payload.get('catalog_n', 0),
+                payload.get('promovidas_n', 0),
+                payload.get('rms', 0),
+                payload.get('top_score', 0),
+                payload.get('top_name', ''),
+                payload.get('top5', ''),
+                1 if payload.get('matched') else 0,
+                payload.get('match_name', ''),
+                payload.get('match_score', 0),
+                1 if payload.get('is_promovida') else 0,
+            ))
+        return {"ok": True}
+    except Exception as exc:
+        log.warning(f"[Diag] Error storing diagnostic: {exc}")
+        return {"ok": False}
+
+
+@app.get("/v1/diagnostics")
+async def get_diagnostics(
+    limit: int = 50,
+    x_api_key: str = Header(alias="X-API-Key", default="")
+):
+    """Devuelve diagnósticos recientes (solo para debug)."""
+    # Allow any valid API key
+    with get_conn(PLAYS_DB) as conn:
+        rows = conn.execute(
+            "SELECT * FROM diagnostics ORDER BY ts DESC LIMIT ?", (limit,)
+        ).fetchall()
+    return {"diagnostics": [dict(r) for r in rows]}
 
 
 @app.get("/v1/plays/{venue_id}")
