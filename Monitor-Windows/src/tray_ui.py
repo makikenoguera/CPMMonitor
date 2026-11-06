@@ -1221,9 +1221,22 @@ class MonitorWindow:
             self._np_title.config(
                 text="Sin reproducción activa",
                 fg=TEXT_SEC, font=("Segoe UI", 12))
-            self._np_artist.config(
-                text="Esperando audio del sistema…" if scanning else "Detenido",
-                fg=TEXT_LBL)
+
+            if scanning:
+                top_score = getattr(self._scanner, 'last_top_score', 0.0)
+                top_name  = getattr(self._scanner, 'last_top_name', '')
+                if top_score > 0.30 and top_name:
+                    short = top_name[:40]
+                    sub = f"Escuchando… mejor coincidencia: {top_score:.2f} — {short}"
+                    sub_color = SR_GREEN if top_score >= 0.60 else (BRAND if top_score >= 0.45 else TEXT_LBL)
+                else:
+                    sub = "Esperando audio del sistema…"
+                    sub_color = TEXT_LBL
+            else:
+                sub = "Detenido"
+                sub_color = TEXT_LBL
+
+            self._np_artist.config(text=sub, fg=sub_color)
             self._np_pct.config(text="")
             self._np_progress["value"] = 0
             self._np_badge.config(text="")

@@ -8,13 +8,16 @@ logger = logging.getLogger(__name__)
 
 
 class LocalMatcher:
-    threshold: float = 0.65      # WASAPI loopback vs MP3/AAC-YouTube — tuned empirically
+    threshold: float = 0.60      # WASAPI loopback vs MP3/AAC-YouTube — tuned empirically
     min_query_len: int = 20      # minimum FP values to attempt a match
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._index: list[dict[str, Any]] = []
         self._index_promovidas: list[dict[str, Any]] = []
+        # Diagnostic: best score from last query (readable by UI)
+        self.last_top_score: float = 0.0
+        self.last_top_name: str = ""
 
     # ------------------------------------------------------------------
     # Public API
@@ -60,10 +63,17 @@ class LocalMatcher:
         if promovidas_copy:
             result = self._search_numpy(q_np, promovidas_copy, label="promovidas")
             if result is not None:
+                self.last_top_score = result['score']
+                self.last_top_name  = f"{result['artista']} - {result['titulo']}"
                 return result
 
         # Phase 2: full index (vectorized numpy — fast even at 4520 tracks)
-        return self._search_numpy(q_np, index_copy, label="full")
+        result = self._search_numpy(q_np, index_copy, label="full")
+        if result is not None:
+            self.last_top_score = result['score']
+            self.last_top_name  = f"{result['artista']} - {result['titulo']}"
+        # Keep last_top from promovidas phase even if full-index found nothing
+        return result
 
     # ------------------------------------------------------------------
     # Vectorized numpy search
@@ -106,12 +116,15 @@ class LocalMatcher:
                 best_entry = entry
 
         if best_entry is None:
-            if top_scores and top_scores[0][0] > 0.30:
+            if top_scores:
                 top_str = ", ".join(f"{s:.3f}={n[:35]}" for s, n in top_scores)
                 logger.info(
                     "LocalMatcher [%s]: no match (threshold=%.2f). Top: %s",
                     label, self.threshold, top_str,
                 )
+                # Expose top score even when below threshold
+                self.last_top_score = top_scores[0][0]
+                self.last_top_name  = top_scores[0][1]
             return None
 
         logger.info(

@@ -24,7 +24,7 @@ class ScannerManager:
 
     AUDIO_THRESHOLD: float = 0.001   # WASAPI loopback levels vary by device
     ACCUMULATION_INTERVAL: float = 2.0   # seconds between RMS ticks
-    REQUIRED_CONFIRMATIONS: int = 2      # 2 consecutive matches required before confirming
+    REQUIRED_CONFIRMATIONS: int = 1      # 1 match sufficient (threshold 0.60 reduces false positives)
     SAMPLE_SECONDS: int = 15             # 15s of audio is enough for Chromaprint
     MIN_QUERY_INTERVAL: float = 10.0     # query every 10s
     PERIODIC_CHECK_INTERVAL: float = 10.0
@@ -52,6 +52,10 @@ class ScannerManager:
         self._last_query_time: float = 0.0
         self._last_match_key: Optional[str] = None
         self._query_in_flight: bool = False   # prevent overlapping queries
+
+        # Diagnostic: last best score from most recent query (shown in UI)
+        self.last_top_score: float = 0.0
+        self.last_top_name: str = ""
 
         # Callback for status updates
         self.on_status_change: Optional[Callable[[str], None]] = None
@@ -211,6 +215,9 @@ class ScannerManager:
         # Try local catalog first (fast, offline)
         if len(self._matcher._index) > 0:
             match = self._matcher.match(values)
+            # Expose last query's best score for the UI diagnostic
+            self.last_top_score = self._matcher.last_top_score
+            self.last_top_name  = self._matcher.last_top_name
             if match:
                 logger.debug("ScannerManager: local match found")
 
