@@ -53,6 +53,12 @@ jobs:
           Write-Host "fpcalc.exe descargado: $(Test-Path fpcalc.exe)"
         shell: powershell
 
+      - name: Escribir versión en src/version.py
+        working-directory: Monitor-Windows
+        shell: bash
+        run: |
+          echo "__version__ = \"${{ steps.version.outputs.version }}\"" > src/version.py
+
       - name: Generar icono
         working-directory: Monitor-Windows
         run: python generate_icon.py

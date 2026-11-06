@@ -24,7 +24,7 @@ class ScannerManager:
 
     AUDIO_THRESHOLD: float = 0.001   # WASAPI loopback levels vary by device
     ACCUMULATION_INTERVAL: float = 2.0   # seconds between RMS ticks
-    REQUIRED_CONFIRMATIONS: int = 1      # 1 match sufficient (threshold 0.60 reduces false positives)
+    REQUIRED_CONFIRMATIONS: int = 2      # 2 consecutive matches required (10s apart) — anti falsos positivos
     SAMPLE_SECONDS: int = 15             # 15s of audio is enough for Chromaprint
     MIN_QUERY_INTERVAL: float = 10.0     # query every 10s
     PERIODIC_CHECK_INTERVAL: float = 10.0

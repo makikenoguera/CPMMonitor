@@ -20,6 +20,10 @@ from PIL import Image, ImageDraw
 logger = logging.getLogger(__name__)
 
 APP_NAME = "SumarteRed Monitor"
+try:
+    from src.version import __version__ as APP_VERSION
+except ImportError:
+    APP_VERSION = "?"
 
 # ── Light palette (mirrors SRColor in Swift) ──────────────────────────────────
 BG_PAGE   = "#F7F7F8"
@@ -220,7 +224,7 @@ class MonitorWindow:
         root = tk.Tk()
         with self._lock:
             self._root = root   # assign inside lock so show() sees it immediately
-        root.title(APP_NAME)
+        root.title(f"{APP_NAME}  v{APP_VERSION}")
         root.geometry("580x680")
         root.minsize(520, 580)
         root.configure(bg=BG_PAGE)
@@ -1008,7 +1012,7 @@ class MonitorWindow:
         if self._root is None:
             return
         dlg = tk.Toplevel(self._root)
-        dlg.title(f"{APP_NAME} — Configuración")
+        dlg.title(f"{APP_NAME}  v{APP_VERSION} — Configuración")
         dlg.resizable(False, False)
         dlg.attributes("-topmost", True)
         dlg.configure(bg="#f0f0f0")
@@ -1273,7 +1277,7 @@ class ConfigDialog:
     def _run(self) -> None:
         root = tk.Tk()
         self._root = root
-        root.title(f"{APP_NAME} — Configuración")
+        root.title(f"{APP_NAME}  v{APP_VERSION} — Configuración")
         root.resizable(False, False)
         root.attributes("-topmost", True)
         root.configure(bg="#f0f0f0")
