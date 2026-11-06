@@ -132,7 +132,7 @@ class CatalogStore:
     # ------------------------------------------------------------------
 
     def upsert_batch(self, tracks: list[dict[str, Any]]) -> None:
-        """Insert or replace a batch of track records.
+        """Insert or replace a batch of track records (delta updates).
 
         Each dict must have keys:
             id, artista, titulo, isrc, duration_seg,
@@ -150,6 +150,30 @@ class CatalogStore:
                     """,
                     tracks,
                 )
+                conn.commit()
+            finally:
+                conn.close()
+
+    def replace_all(self, tracks: list[dict[str, Any]]) -> None:
+        """Truncate the tracks table and insert all records atomically.
+
+        Used for full catalog downloads so the local store exactly matches
+        the server — no orphaned rows from previous downloads.
+        """
+        with self._lock:
+            conn = self._connect()
+            try:
+                conn.execute("DELETE FROM tracks")
+                if tracks:
+                    conn.executemany(
+                        """
+                        INSERT INTO tracks
+                            (id, artista, titulo, isrc, duration_seg, fp_raw, active, updated_at, is_promovida)
+                        VALUES
+                            (:id, :artista, :titulo, :isrc, :duration_seg, :fp_raw, :active, :updated_at, :is_promovida)
+                        """,
+                        tracks,
+                    )
                 conn.commit()
             finally:
                 conn.close()

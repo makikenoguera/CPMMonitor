@@ -99,7 +99,7 @@ class CatalogManager:
             logger.error("CatalogManager: error fetching delta catalog: %s", exc)
             return None
 
-    def _apply_catalog_data(self, data: dict) -> None:
+    def _apply_catalog_data(self, data: dict, full_replace: bool = False) -> None:
         tracks_raw = data.get('tracks', [])
         version = int(data.get('version', 0))
 
@@ -130,7 +130,10 @@ class CatalogManager:
 
         prev_fp = self._store.fp_count
 
-        if batch:
+        if full_replace:
+            # Full download: replace entire local catalog so no orphaned rows remain
+            self._store.replace_all(batch)
+        elif batch:
             self._store.upsert_batch(batch)
 
         self._store.local_version = version
@@ -178,11 +181,11 @@ class CatalogManager:
             local_version = 0
 
         if track_count == 0 or local_version == 0:
-            # No local catalog (or reset) - download full
-            logger.info("CatalogManager: downloading full catalog")
+            # No local catalog (or reset) - download full and replace entirely
+            logger.info("CatalogManager: downloading full catalog (replace_all)")
             data = self._fetch_full()
             if data:
-                self._apply_catalog_data(data)
+                self._apply_catalog_data(data, full_replace=True)
         elif server_version != local_version:
             # Version mismatch - download delta since last_sync
             last_sync = self._store.last_sync
