@@ -8,8 +8,9 @@ logger = logging.getLogger(__name__)
 
 
 class LocalMatcher:
-    threshold: float = 0.60      # WASAPI loopback vs MP3/AAC-YouTube — tuned empirically
-    min_query_len: int = 20      # minimum FP values to attempt a match
+    threshold: float = 0.50          # WASAPI loopback vs MP3/AAC-YouTube — tuned empirically
+    min_query_len: int = 20           # minimum FP values to attempt a match
+    max_duration_seg: float = 600.0   # ignore tracks longer than 10 min (compilations/mixes)
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -25,7 +26,10 @@ class LocalMatcher:
 
     def reload(self, entries: list[dict[str, Any]]) -> None:
         """Rebuild the in-memory index from catalog entries."""
-        all_entries = [e for e in entries if e.get('fp')]
+        all_entries = [
+            e for e in entries
+            if e.get('fp') and e.get('duration_seg', 0) <= self.max_duration_seg
+        ]
         promovidas = [e for e in all_entries if e.get('is_promovida')]
 
         # Pre-convert FP lists to numpy arrays for fast matching

@@ -451,7 +451,8 @@ def load_fp_index():
                 """SELECT id, artista_final, titulo_final, isrc, duration_seg,
                           fingerprint, active, updated_at
                    FROM tracks
-                   WHERE procesado = 1 AND fingerprint IS NOT NULL"""
+                   WHERE procesado = 1 AND fingerprint IS NOT NULL
+                     AND (active IS NULL OR active = 1)"""
             ).fetchall()
 
         index = []
